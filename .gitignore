@@ -4,3 +4,10 @@ results
 ./results/*
 __pycache__
 venv
+.ipynb_checkpoints
+.DS_Store
+.vscode
+.env
+.env.local
+.env.development.local
+.env.test.local
