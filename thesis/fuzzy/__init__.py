@@ -52,7 +52,8 @@ from thesis.fuzzy.similarity import (
 )
 
 from thesis.fuzzy.membership import (
-    compute_ndg,
+    compute_ndg_dense,
+    compute_ndg_streaming,
     compute_membership_function,
     compute_membership_function_kde,
     compute_membership_functions,
@@ -103,8 +104,8 @@ __all__ = [
     "distance_hamming", "distance_euclidean", "distance_chebyshev",
     
     # Membership function generation
-    "compute_ndg", "compute_membership_function", "compute_membership_function_kde",
-    "compute_membership_functions",
+    "compute_ndg_dense", "compute_ndg_streaming", "compute_membership_function",
+    "compute_membership_function_kde", "compute_membership_functions",
     
     # Master function for similarity
     "calculate_all_similarity_metrics",

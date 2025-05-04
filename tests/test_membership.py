@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 from thesis.fuzzy.membership import (
-    compute_ndg,
+    compute_ndg_dense,
+    compute_ndg_streaming,
     compute_membership_function,
     compute_membership_function_kde,
     compute_membership_functions
@@ -21,7 +22,7 @@ class TestComputeNDG:
         # Create sample data
         sensor_data = np.array([3.0, 5.0, 7.0])
         sigma = 1.0
-        result = compute_ndg(x_range, sensor_data, sigma)
+        result = compute_ndg_streaming(x_range, sensor_data, sigma)
         
         # Check shape
         assert len(result) == len(x_range)
@@ -42,7 +43,7 @@ class TestComputeNDG:
         """Test compute_ndg with empty data."""
         sensor_data = np.array([])
         sigma = 1.0
-        result = compute_ndg(x_range, sensor_data, sigma)
+        result = compute_ndg_streaming(x_range, sensor_data, sigma)
         
         # Result should be all zeros for empty data
         assert np.all(result == 0)
@@ -52,10 +53,10 @@ class TestComputeNDG:
         sensor_data = np.array([5.0])
         
         # Small sigma should give narrower peak
-        result_small_sigma = compute_ndg(x_range, sensor_data, 0.1)
+        result_small_sigma = compute_ndg_streaming(x_range, sensor_data, 0.1)
         
         # Large sigma should give wider peak
-        result_large_sigma = compute_ndg(x_range, sensor_data, 1.0)
+        result_large_sigma = compute_ndg_streaming(x_range, sensor_data, 1.0)
         
         # Get half-width of peaks
         half_height_small = np.max(result_small_sigma) / 2
@@ -70,7 +71,7 @@ class TestComputeNDG:
     def test_very_small_sigma(self):
         """Test with very small sigma to check for numerical stability."""
         sensor_data = np.array([5.0])
-        result = compute_ndg(x_range, sensor_data, 1e-10)
+        result = compute_ndg_streaming(x_range, sensor_data, 1e-10)
         
         # Result should still be valid (not NaN)
         assert not np.isnan(result).any()
@@ -79,6 +80,13 @@ class TestComputeNDG:
         assert abs(x_range[max_idx] - 5.0) < 0.2
 
 
+    def test_streaming_matches_dense():
+        rng = np.random.default_rng(42)
+        data = rng.normal(size=500)
+        x = np.linspace(-3, 3, 500)
+        dense = compute_ndg_dense(x, data, 0.4)
+        stream = compute_ndg_streaming(x, data, 0.4, chunk_size=100)
+        np.testing.assert_allclose(stream, dense, rtol=1e-3, atol=1e-6)
 class TestComputeMembershipFunction:
     """Tests for compute_membership_function."""
     

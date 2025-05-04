@@ -7,17 +7,68 @@ from sensor data using neighbor density method.
 
 from __future__ import annotations
 
-from typing import Tuple, Union, Sequence, Optional
+from typing import Tuple, Union, Sequence, Optional, Final
+from numpy.typing import ArrayLike, NDArray
 
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.stats import gaussian_kde
+import math
 
 # Type definitions
 ArrayLike = Union[Sequence[float], np.ndarray]
 
+SQRT_2PI: Final[float] = math.sqrt(2.0 * math.pi)
 
-def compute_ndg(x_values: ArrayLike, sensor_data: ArrayLike, sigma: float) -> np.ndarray:
+def compute_ndg_streaming(
+    x_values: ArrayLike,
+    sensor_data: ArrayLike,
+    sigma: float,
+    chunk_size: int = 10_000,
+    dtype: str | np.dtype = "float64",
+) -> NDArray[np.floating]:
+    """
+    Neighbour–Density Graph (streaming, memory–bounded).
+
+    Parameters
+    ----------
+    x_values
+        1-D coordinates at which to evaluate the density.  Length **N**.
+    sensor_data
+        1-D array of observed sensor samples.  Length **M**.  Must be non-empty.
+    sigma
+        Positive bandwidth of the Gaussian kernel.
+    chunk_size
+        How many `x_values` to process per iteration.  Trade-off RAM ↔ speed.
+    dtype
+        Accumulator dtype.  Use float32 when RAM is very tight.
+
+    Returns
+    -------
+    ndg : ndarray, shape (N,)
+        Normalised kernel-density estimate at each `x_values[i]`.
+    """
+    x = np.asarray(x_values, dtype=dtype)
+    data = np.asarray(sensor_data, dtype=dtype)
+
+    if data.size == 0:
+        raise ValueError("sensor_data must contain at least one point.")
+    if sigma <= 0:
+        raise ValueError("sigma must be > 0.")
+
+    norm = 1.0 / (SQRT_2PI * sigma * data.size)
+    inv_two_sigma_sq = 0.5 / (sigma * sigma)
+    out = np.empty_like(x)
+
+    for start in range(0, x.size, chunk_size):
+        end = start + chunk_size
+        x_chunk = x[start:end][:, None]            # shape (c,1)
+        d2 = (x_chunk - data[None, :]) ** 2        # (c,M) but *small* c
+        out[start:end] = np.exp(-d2 * inv_two_sigma_sq).sum(axis=1)
+
+    return out * norm
+
+def compute_ndg_dense(x_values: ArrayLike, sensor_data: ArrayLike, sigma: float) -> np.ndarray:
     """
     Compute Neighbor Density Graph (NDG) values.
     
