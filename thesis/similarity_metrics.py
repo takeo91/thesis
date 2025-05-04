@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 from scipy.stats import gaussian_kde  # Used only in similarity_matlab_metric1
 
 # Local helpers – assumed available in the same package
-from fuzzy_helpers import (
+from thesis.fuzzy_helpers import (
     safe_divide,
     fuzzy_intersection,
     fuzzy_union,

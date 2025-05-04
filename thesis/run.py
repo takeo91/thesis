@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import os
 
 # Updated imports to reflect the new module structure
-from thesis.membership_functions import compute_membership_functions
-from thesis.similarity_metrics import (
+from membership_functions import compute_membership_functions
+from similarity_metrics import (
     calculate_all_similarity_metrics,
 )  # Renamed function
-from thesis.fitness_evaluation import compute_fitness_metrics
-from thesis.preprocessing import normalize_data
+from fitness_evaluation import compute_fitness_metrics
+from preprocessing import normalize_data
 from joblib import Parallel, delayed
 
 
