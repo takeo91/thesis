@@ -39,7 +39,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest
+          pytest -q --cov=thesis_fuzzy --cov-report=term-missing
 
   build-wheel:
     name: Build wheel (Py 3.13)
