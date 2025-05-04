@@ -35,7 +35,7 @@ jobs:
           pip install .[dev] 
 
       - name: Lint with ruff
-        run: ruff . --output-format=github
+        run: ruff check
 
       - name: Run tests with coverage
         run: |
