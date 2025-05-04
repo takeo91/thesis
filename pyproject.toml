@@ -14,7 +14,8 @@ dependencies = [
     "scikit-learn",
     "statsmodels",
     "matplotlib",
-    "mass-ts"
+    "mass-ts",
+    "pytest-cov>=6.1.1",
 ]
 
 [project.optional-dependencies]

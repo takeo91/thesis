@@ -1,7 +1,25 @@
+"""
+Data parsing and extraction utilities.
+
+This module provides functions for parsing and extracting data from files,
+including sensor metadata and label mapping functions.
+"""
+
+from __future__ import annotations
+from typing import Dict, List, Any, Optional
 import re
 
 
-def extract_column_names(file_path):
+def extract_column_names(file_path: str) -> List[str]:
+    """
+    Extract column names from a file containing column descriptions.
+    
+    Args:
+        file_path: Path to the file containing column descriptions.
+        
+    Returns:
+        List of column names.
+    """
     column_names = []
     with open(file_path, "r") as f:
         lines = f.readlines()
@@ -27,7 +45,16 @@ def extract_column_names(file_path):
     return column_names
 
 
-def extract_labels(file_path):
+def extract_labels(file_path: str) -> Dict[str, Dict[str, str]]:
+    """
+    Extract label mappings from a file containing label descriptions.
+    
+    Args:
+        file_path: Path to the file containing label descriptions.
+        
+    Returns:
+        Dictionary mapping track names to dictionaries of index-to-label mappings.
+    """
     # Initialize a dictionary to hold mappings for each category
     label_mappings = {}
     with open(file_path, "r") as f:
@@ -62,7 +89,18 @@ def extract_labels(file_path):
     return label_mappings
 
 
-def extract_metadata(column_name, label_columns):
+def extract_metadata(column_name: str, label_columns: List[str]) -> Dict[str, Optional[str]]:
+    """
+    Extract metadata from a column name using regex patterns.
+    
+    Args:
+        column_name: Name of the column to extract metadata from.
+        label_columns: List of column names that are labels.
+        
+    Returns:
+        Dictionary containing metadata including sensor_type, body_part, 
+        measurement_type, axis, and unit.
+    """
     metadata = {
         "sensor_type": None,
         "body_part": None,
@@ -123,4 +161,4 @@ def extract_metadata(column_name, label_columns):
     if unit_match:
         metadata["unit"] = unit_match.group(1)
 
-    return metadata
+    return metadata 

@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from thesis.similarity_metrics import (
+from thesis.fuzzy import (
+    # Similarity metrics
     similarity_jaccard,
     similarity_dice,
     similarity_overlap_coefficient,
@@ -10,6 +11,8 @@ from thesis.similarity_metrics import (
     similarity_chebyshev,
     similarity_cosine,
     similarity_pearson,
+    
+    # MATLAB variants
     mean_min_over_max,
     mean_dice_coefficient,
     mean_one_minus_abs_diff,
@@ -21,6 +24,8 @@ from thesis.similarity_metrics import (
     product_over_min_norm_squared,
     one_minus_mean_symmetric_difference,
     one_minus_abs_diff_over_sum_cardinality,
+    
+    # Fuzzy operations
     fuzzy_symmetric_difference,
     fuzzy_intersection,
     fuzzy_union,

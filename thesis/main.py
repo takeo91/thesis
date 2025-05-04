@@ -1,154 +1,111 @@
+"""
+Main entry point for the thesis project.
+
+This script provides examples of how to use the thesis modules
+for analyzing sensor data and computing fuzzy similarity metrics.
+"""
+
+import argparse
+import sys
+import os
 import pandas as pd
-from utils import extract_column_names, extract_metadata, extract_labels
+import matplotlib.pyplot as plt
+import numpy as np
 
-# Path to your data file
-data_file = "Data/OpportunityUCIDataset/dataset/S1-ADL1.dat"
-column_names_file = "Data/OpportunityUCIDataset/dataset/column_names.txt"
-label_legend_file = "Data/OpportunityUCIDataset/dataset/label_legend.txt"
-
-# Load the data
-df = pd.read_csv(data_file, sep="\s+", header=None, na_values="NaN")
-
-# Read the column names
-column_names = extract_column_names(column_names_file)
-
-# Check if the number of column names matches the DataFrame columns
-if len(column_names) == df.shape[1]:
-    df.columns = column_names
-else:
-    print("The number of column names does not match the data columns.")
-    # Optionally, handle the mismatch here
-
-# Option to fill missing values (e.g., with forward fill)
-df.fillna(method="ffill", inplace=True)
-
-# # Or drop rows with missing values
-# df.dropna(inplace=True)
-
-# Convert time column to integer (if necessary)
-df["MILLISEC"] = df["MILLISEC"].astype(int)
-
-# Convert sensor data to float
-sensor_columns = df.columns[1:243]
-df[sensor_columns] = df[sensor_columns].astype(float)
-
-# Convert labels to integers
-label_columns = [
-    "Locomotion",
-    "HL_Activity",
-    "LL_Left_Arm",
-    "LL_Left_Arm_Object",
-    "LL_Right_Arm",
-    "LL_Right_Arm_Object",
-    "ML_Both_Arms",
-]
-
-df[label_columns] = df[label_columns].astype(int)
-
-# Handle label columns
-
-# Map numerical labels to descriptions
-label_mappings = extract_labels(label_legend_file)
-
-for label_col in label_columns:
-    if label_col in label_mappings:
-        mapping = label_mappings[label_col]
-        df[label_col] = df[label_col].map(mapping)
-    else:
-        if label_col == "ML_Both_Arms":
-            df["Combined_Index"] = (
-                df["LL_Right_Arm"].astype(str)
-                + "_"
-                + df["LL_Right_Arm_Object"].astype(str)
-            )
-            df[label_col] = df["Combined_Index"].map(label_mappings[label_col])
-            df.drop("Combined_Index", axis=1, inplace=True)
-
-df[label_columns] = df[label_columns].fillna("Unknown")
-
-# Initialize a list to hold metadata dictionaries
-metadata_list = []
-
-for col_name in column_names:
-    meta = extract_metadata(col_name, label_columns)
-    meta["original_name"] = col_name
-    metadata_list.append(meta)
-
-
-# Create a DataFrame from the metadata
-metadata_df = pd.DataFrame(metadata_list)
-metadata_df.set_index("original_name", inplace=True)
-
-# Reindex metadata_df to match df.columns
-metadata_df = metadata_df.reindex(df.columns)
-
-# Create arrays for MultiIndex levels
-arrays = [
-    metadata_df["sensor_type"].values,
-    metadata_df["body_part"].values,
-    metadata_df["measurement_type"].values,
-    metadata_df["axis"].values,
-]
-
-# Replace None or NaN with 'Unknown'
-arrays = [[a if pd.notnull(a) else "Unknown" for a in array] for array in arrays]
-
-# Create MultiIndex
-multi_index = pd.MultiIndex.from_arrays(
-    arrays, names=["SensorType", "BodyPart", "MeasurementType", "Axis"]
+from thesis.fuzzy import (
+    similarity_jaccard,
+    similarity_dice,
+    similarity_cosine,
+    similarity_pearson,
+    compute_membership_function,
 )
 
-# Assign MultiIndex to df columns
-df.columns = multi_index
+from thesis.core import normalize_data
+from thesis.analysis import (
+    process_opportunity_dataset,
+    run_experiment,
+)
 
-# Now you can proceed with your analysis
-print(df.head())
-print(df.columns)
-print(df.columns.levels)
 
-# Access labels
-labels_df = df["Label"]
-print(labels_df.head())
+def run_opportunity_dataset_example():
+    """Run an example analysis on the Opportunity dataset."""
+    print("Loading Opportunity dataset...")
+    
+    # Process the dataset
+    processor = process_opportunity_dataset()
+    
+    # Get a summary of the data
+    summary = processor.get_data_summary()
+    print("\nDataset Summary:")
+    for key, value in summary.items():
+        if key != "label_activities":
+            print(f"  {key}: {value}")
+    
+    print("\nActivity Labels:")
+    for activity_type, labels in summary["label_activities"].items():
+        print(f"  {activity_type}: {labels}")
+    
+    # Plot Back Accelerometer data during Walking
+    print("\nPlotting Back Accelerometer data during Walking...")
+    processor.plot_sensor_data(
+        sensor_type="Accelerometer",
+        body_part="BACK",
+        measurement_type="acc",
+        axis="X",
+        activity_filter={"Locomotion": "Walk"},
+        save_path="results/back_acc_walking.png"
+    )
+    
+    print("Example completed. Plot saved to results/back_acc_walking.png")
 
-# Access time column
-time_series = df["Time", "N/A", "Time", "N/A"]
-print(time_series.head())
 
-# Access sensor data
-accelerometer_df = df["Accelerometer"]
-print(accelerometer_df.head())
+def run_similarity_experiment():
+    """Run an experiment to compare different similarity metrics."""
+    print("Running similarity metrics experiment...")
+    
+    # Run the experiment with default settings
+    results_df = run_experiment(
+        specific_cases=[1, 2, 3],  # Run only specific test cases
+        sigma_options=[0.1, 0.2, "r0.1"],  # Use specific sigma values
+        n_jobs=4,  # Use 4 parallel processes (adjust based on your system)
+        save_plots=True
+    )
+    
+    # Print summary of results
+    print("\nResults Summary:")
+    print(f"Completed {len(results_df)} parameter combinations")
+    
+    # Calculate mean scores grouped by case and normalization
+    summary = results_df.groupby(['Case', 'Normalized'])[
+        [col for col in results_df.columns if col.startswith('Sim_')]
+    ].mean()
+    
+    print("\nMean similarity scores by case and normalization:")
+    print(summary[['Sim_Jaccard', 'Sim_Dice', 'Sim_Cosine', 'Sim_Pearson']].round(4))
+    
+    print("\nExperiment completed. Results saved to results/similarity_results.csv")
+    print("Plots saved to results/plots/ directory")
 
-idx = pd.IndexSlice
 
-# Select the 'Locomotion' label column, accounting for all values in the 'OriginalName' level
-locomotion_column = df.loc[:, idx["Label", "Locomotion", "Label", "N/A"]]
+def main():
+    """Main function to parse arguments and run selected examples."""
+    parser = argparse.ArgumentParser(description='Run thesis examples')
+    parser.add_argument('--dataset', action='store_true', help='Run Opportunity dataset example')
+    parser.add_argument('--experiment', action='store_true', help='Run similarity metrics experiment')
+    
+    args = parser.parse_args()
+    
+    # Create results directory if it doesn't exist
+    os.makedirs("results/plots", exist_ok=True)
+    
+    if args.dataset:
+        run_opportunity_dataset_example()
+    elif args.experiment:
+        run_similarity_experiment()
+    else:
+        # If no arguments are provided, show help
+        parser.print_help()
 
-# Since there's only one column, convert it to a Series
-locomotion_series = locomotion_column.squeeze()
 
-# Create the mask for rows where Locomotion is 'Walk'
-walk_mask = locomotion_series == "Walk"
-
-# Now select the 'Back accX' data
-back_accX_column = df.loc[:, idx["Accelerometer", "BACK", "acc", "X"]]
-back_accX = back_accX_column.squeeze()
-
-# Similarly, select the time column
-time_column = df.loc[:, idx["Time", "N/A", "Time", "N/A"]]
-time_series = time_column.squeeze()
-
-# Apply the mask to get data during 'Walk'
-back_accX_walk = back_accX[walk_mask]
-time_series_walk = time_series[walk_mask]
-
-# # Plotting
-# plt.figure(figsize=(10, 5))
-# plt.plot(time_series_walk, back_accX_walk)
-# plt.title('Back Accelerometer accX During Walking')
-# plt.xlabel('Time (ms)')
-# plt.ylabel('Acceleration (milli g)')
-# plt.show()
-
-print(df["Time"].head())
-
-print(df["Time"].squeeze().head())
+if __name__ == "__main__":
+    main()

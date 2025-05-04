@@ -1,26 +1,30 @@
 """
-preprocessing.py
+Data preprocessing utilities.
 
-Provides data preprocessing utilities like normalization and standardization.
+This module provides functions for data preprocessing such as
+normalization and standardization of sensor data.
 """
 
+from __future__ import annotations
+from typing import Union, Sequence
+
 import numpy as np
-from fuzzy_helpers import safe_divide  # Relative import
 
-# ==============================================================================
-# Data Preprocessing Utilities
-# ==============================================================================
+from thesis.fuzzy.operations import safe_divide
+
+# Type definitions
+ArrayLike = Union[Sequence[float], np.ndarray]
 
 
-def normalize_data(data):
+def normalize_data(data: ArrayLike) -> np.ndarray:
     """
     Performs Min-Max Normalization on the data to scale it to the range [0, 1].
 
     Args:
-        data (np.ndarray): Input data array.
+        data: Input data array.
 
     Returns:
-        np.ndarray: Normalized data array. Returns array of 0.5s if range is zero.
+        Normalized data array. Returns array of 0.5s if range is zero.
     """
     data = np.asarray(data)
     if data.size == 0:
@@ -36,15 +40,15 @@ def normalize_data(data):
     return normalized_data
 
 
-def standardize_data(data):
+def standardize_data(data: ArrayLike) -> np.ndarray:
     """
     Performs Z-Score Standardization (mean=0, std=1) on the data.
 
     Args:
-        data (np.ndarray): Input data array.
+        data: Input data array.
 
     Returns:
-        np.ndarray: Standardized data array. Returns array of zeros if std dev is zero.
+        Standardized data array. Returns array of zeros if std dev is zero.
     """
     data = np.asarray(data)
     if data.size == 0:
@@ -53,4 +57,4 @@ def standardize_data(data):
     std = np.std(data)
     # Handle case where standard deviation is zero
     standardized_data = safe_divide(data - mean, std, default=0.0)
-    return standardized_data
+    return standardized_data 

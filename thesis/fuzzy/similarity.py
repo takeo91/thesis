@@ -6,8 +6,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.stats import gaussian_kde  # Used only in similarity_matlab_metric1
 
-# Local helpers – assumed available in the same package
-from thesis.fuzzy_helpers import (
+# Local helpers from the fuzzy package
+from thesis.fuzzy.operations import (
     safe_divide,
     fuzzy_intersection,
     fuzzy_union,
@@ -15,7 +15,7 @@ from thesis.fuzzy_helpers import (
     fuzzy_cardinality,
     fuzzy_symmetric_difference,
 )
-from thesis.membership_functions import compute_ndg
+from thesis.fuzzy.membership import compute_ndg
 
 ArrayLike = Union[Sequence[float], np.ndarray]
 
