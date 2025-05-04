@@ -6,21 +6,8 @@ for analyzing sensor data and computing fuzzy similarity metrics.
 """
 
 import argparse
-import sys
 import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
-from thesis.fuzzy import (
-    similarity_jaccard,
-    similarity_dice,
-    similarity_cosine,
-    similarity_pearson,
-    compute_membership_function,
-)
-
-from thesis.core import normalize_data
 from thesis.analysis import (
     process_opportunity_dataset,
     run_experiment,

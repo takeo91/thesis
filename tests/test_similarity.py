@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from scipy.interpolate import interp1d
 
 from thesis.fuzzy.similarity import (
     # Set-theoretic metrics

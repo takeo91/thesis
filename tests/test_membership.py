@@ -1,7 +1,5 @@
 import numpy as np
 import pytest
-from scipy import stats
-from scipy.interpolate import interp1d
 
 from thesis.fuzzy.membership import (
     compute_ndg,

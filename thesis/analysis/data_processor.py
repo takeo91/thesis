@@ -6,10 +6,9 @@ sensor data from the Opportunity dataset for analysis.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Union, Optional, Tuple
+from typing import Dict, List, Union, Optional
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
