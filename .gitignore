@@ -13,3 +13,6 @@ venv
 .env.development.local
 .env.test.local
 *.egg-info
+build
+.ruff_cache
+.pytest_cache
