@@ -15,13 +15,14 @@ from fuzzy_helpers import (
     fuzzy_cardinality,
     fuzzy_symmetric_difference,
 )
-from membership_functions import compute_ndg
+from thesis.membership_functions import compute_ndg
 
 ArrayLike = Union[Sequence[float], np.ndarray]
 
 # -----------------------------------------------------------------------------
 # 1. Set‑theoretic / Overlap‑based metrics
 # -----------------------------------------------------------------------------
+
 
 def similarity_jaccard(mu1: ArrayLike, mu2: ArrayLike) -> float:
     """Jaccard index / Tanimoto coefficient."""
@@ -52,6 +53,7 @@ def similarity_overlap_coefficient(mu1: ArrayLike, mu2: ArrayLike) -> float:
 # -----------------------------------------------------------------------------
 # MATLAB‑specific variants built from the above primitives (renamed descriptively)
 # -----------------------------------------------------------------------------
+
 
 def mean_min_over_max(mu1: ArrayLike, mu2: ArrayLike) -> float:
     """Mean of (min / max) pointwise."""
@@ -152,6 +154,7 @@ def max_intersection(mu1: ArrayLike, mu2: ArrayLike) -> float:
 # 2. Distance‑based metrics and their similarity transforms
 # -----------------------------------------------------------------------------
 
+
 def distance_hamming(mu1: ArrayLike, mu2: ArrayLike) -> float:
     return float(np.sum(np.abs(np.asarray(mu1) - np.asarray(mu2))))
 
@@ -165,7 +168,7 @@ def similarity_hamming(mu1: ArrayLike, mu2: ArrayLike) -> float:
 
 def distance_euclidean(mu1: ArrayLike, mu2: ArrayLike) -> float:
     diff = np.asarray(mu1) - np.asarray(mu2)
-    return float(np.sqrt(np.sum(diff ** 2)))
+    return float(np.sqrt(np.sum(diff**2)))
 
 
 def similarity_euclidean(mu1: ArrayLike, mu2: ArrayLike) -> float:
@@ -192,9 +195,11 @@ def similarity_matlab_S(mu1: ArrayLike, mu2: ArrayLike) -> float:
     denominator = fuzzy_cardinality(mu1) + fuzzy_cardinality(mu2)
     return 1.0 - safe_divide(distance_hamming(mu1, mu2), denominator)
 
+
 # -----------------------------------------------------------------------------
 # 3. Correlation‑based metrics
 # -----------------------------------------------------------------------------
+
 
 def similarity_cosine(mu1: ArrayLike, mu2: ArrayLike) -> float:
     mu1, mu2 = map(np.asarray, (mu1, mu2))
@@ -215,7 +220,10 @@ def similarity_pearson(mu1: ArrayLike, mu2: ArrayLike) -> float:
     if std1 < 1e-12 or std2 < 1e-12:
         return 1.0 if std1 < 1e-12 and std2 < 1e-12 else 0.0
     centred1, centred2 = mu1 - mu1.mean(), mu2 - mu2.mean()
-    return float(np.dot(centred1, centred2) / (np.linalg.norm(centred1) * np.linalg.norm(centred2)))
+    return float(
+        np.dot(centred1, centred2)
+        / (np.linalg.norm(centred1) * np.linalg.norm(centred2))
+    )
 
 
 def similarity_matlab_P(mu1: ArrayLike, mu2: ArrayLike) -> float:
@@ -226,9 +234,11 @@ def similarity_matlab_P(mu1: ArrayLike, mu2: ArrayLike) -> float:
         return 1.0 if np.allclose(mu1, 0) and np.allclose(mu2, 0) else 0.0
     return numerator / denom
 
+
 # -----------------------------------------------------------------------------
 # 4. Other MATLAB metrics
 # -----------------------------------------------------------------------------
+
 
 def similarity_matlab_T(mu1: ArrayLike, mu2: ArrayLike) -> float:
     return float(np.max(fuzzy_intersection(mu1, mu2))) if np.asarray(mu1).size else 0.0
@@ -238,6 +248,7 @@ def similarity_matlab_T(mu1: ArrayLike, mu2: ArrayLike) -> float:
 # 5. Metric1 (approximation of MATLAB "Theirs")
 # -----------------------------------------------------------------------------
 
+
 def similarity_matlab_metric1(
     data_s1: ArrayLike,
     data_s2: ArrayLike,
@@ -246,7 +257,9 @@ def similarity_matlab_metric1(
     sigma_s2: Union[float, str, None] = None,
 ) -> float:
     """Approximation of MATLAB's proprietary similarity_metric1."""
-    data_s1, data_s2, x_values_common = map(np.asarray, (data_s1, data_s2, x_values_common))
+    data_s1, data_s2, x_values_common = map(
+        np.asarray, (data_s1, data_s2, x_values_common)
+    )
     if data_s1.size < 2 or data_s2.size < 2 or not x_values_common.size:
         return np.nan
 
@@ -293,6 +306,7 @@ def similarity_matlab_metric1(
 # 6. Master orchestrator
 # -----------------------------------------------------------------------------
 
+
 def similarity_matlab_metric2(
     mu_s1: ArrayLike,
     mu_s2: ArrayLike,
@@ -302,12 +316,12 @@ def similarity_matlab_metric2(
     data_s2: ArrayLike | None = None,
 ) -> float:
     """Implementation of MATLAB's similarity_metric2 which includes signal derivatives.
-    
+
     This metric combines:
     1. Uses both the original membership functions and their derivatives
     2. Computes a weighted sum of memberships normalized by signal length
     3. Captures shape similarity through derivative comparison
-    
+
     Args:
         mu_s1: Membership function values for signal 1
         mu_s2: Membership function values for signal 2
@@ -322,7 +336,7 @@ def similarity_matlab_metric2(
     # Compute derivatives of membership functions
     d_mu_s1 = np.diff(mu_s1)
     d_mu_s2 = np.diff(mu_s2)
-    x_values_deriv = x_values[:-1]  # One fewer point for derivatives
+    # x_values_deriv = x_values[:-1]  # One fewer point for derivatives
 
     # Calculate delta (IQR difference) if raw data available, else use x-range
     if data_s1 is not None and data_s2 is not None:
@@ -429,7 +443,7 @@ def calculate_all_similarity_metrics(
         if data_s1 is not None and data_s2 is not None
         else np.nan
     )
-    
+
     results["CustomMetric2_DerivativeWeightedSimilarity"] = similarity_matlab_metric2(
         mu_s1, mu_s2, x_values, data_s1=data_s1, data_s2=data_s2
     )

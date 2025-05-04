@@ -3,11 +3,13 @@ fuzzy_helpers.py
 
 Provides basic fuzzy logic operations and utility functions.
 """
+
 import numpy as np
 
 # ==============================================================================
 # Utility Functions
 # ==============================================================================
+
 
 def safe_divide(numerator, denominator, default=0.0):
     """
@@ -32,35 +34,47 @@ def safe_divide(numerator, denominator, default=0.0):
         valid_indices = np.abs(denominator) > 1e-9
         # Ensure numerator matches shape for broadcasting or element-wise division
         if numerator.shape == denominator.shape:
-             result[valid_indices] = numerator[valid_indices] / denominator[valid_indices]
+            result[valid_indices] = (
+                numerator[valid_indices] / denominator[valid_indices]
+            )
         # Check for scalar numerator (shape () or size 1)
         elif numerator.shape == () or numerator.size == 1:
-             scalar_num = numerator.item() if isinstance(numerator, np.ndarray) else numerator
-             result[valid_indices] = scalar_num / denominator[valid_indices]
-        else: # Shapes incompatible other than scalar numerator
-             raise ValueError("Numerator and denominator shapes incompatible for safe_divide.")
+            scalar_num = (
+                numerator.item() if isinstance(numerator, np.ndarray) else numerator
+            )
+            result[valid_indices] = scalar_num / denominator[valid_indices]
+        else:  # Shapes incompatible other than scalar numerator
+            raise ValueError(
+                "Numerator and denominator shapes incompatible for safe_divide."
+            )
 
         return result
+
 
 # ==============================================================================
 # Basic Fuzzy Set Operations
 # ==============================================================================
 
+
 def fuzzy_intersection(mu1, mu2):
     """Computes the fuzzy intersection (pointwise minimum)."""
     return np.minimum(np.asarray(mu1), np.asarray(mu2))
+
 
 def fuzzy_union(mu1, mu2):
     """Computes the fuzzy union (pointwise maximum)."""
     return np.maximum(np.asarray(mu1), np.asarray(mu2))
 
+
 def fuzzy_negation(mu):
     """Computes the fuzzy negation (1 - mu)."""
     return 1.0 - np.asarray(mu)
 
+
 def fuzzy_cardinality(mu):
     """Computes the fuzzy cardinality (sum of membership values)."""
     return np.sum(np.asarray(mu))
+
 
 def fuzzy_symmetric_difference(mu1, mu2):
     """
