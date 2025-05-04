@@ -106,9 +106,6 @@ def test_overlap_coefficient_edge_cases():
 
 def test_pearson_edge_cases():
     """Test special cases for Pearson correlation."""
-    # Regular case
-    a = np.array([0.1, 0.3, 0.5, 0.7])
-    b = np.array([0.2, 0.4, 0.6, 0.8])
     
     # For const vectors, Pearson should return 1.0 if both are constant, else 0.0
     assert np.isclose(similarity_pearson(ones, ones), 1.0, atol=1e-8)
