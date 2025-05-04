@@ -50,56 +50,53 @@ def similarity_overlap_coefficient(mu1: ArrayLike, mu2: ArrayLike) -> float:
 
 
 # -----------------------------------------------------------------------------
-# MATLAB‑specific variants built from the above primitives
+# MATLAB‑specific variants built from the above primitives (renamed descriptively)
 # -----------------------------------------------------------------------------
 
-def similarity_matlab_M(mu1: ArrayLike, mu2: ArrayLike) -> float:
-    return similarity_jaccard(mu1, mu2)
-
-
-def similarity_matlab_S1(mu1: ArrayLike, mu2: ArrayLike) -> float:
+def mean_min_over_max(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Mean of (min / max) pointwise."""
     mins = fuzzy_intersection(mu1, mu2)
     maxs = fuzzy_union(mu1, mu2)
     ratios = safe_divide(mins, maxs, default=1.0)
     return float(np.mean(ratios))
 
 
-def similarity_matlab_S3(mu1: ArrayLike, mu2: ArrayLike) -> float:
+def mean_dice_coefficient(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Mean of (2*min / (A+B)) pointwise (Dice-like)."""
     mins = fuzzy_intersection(mu1, mu2)
     sums = np.asarray(mu1) + np.asarray(mu2)
     ratios = safe_divide(2.0 * mins, sums, default=1.0)
     return float(np.mean(ratios))
 
 
-def similarity_matlab_S5(mu1: ArrayLike, mu2: ArrayLike) -> float:
+def jaccard_negation(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Jaccard index applied to the negated sets."""
+    return similarity_jaccard(fuzzy_negation(mu1), fuzzy_negation(mu2))
+
+
+def intersection_over_max_cardinality(mu1: ArrayLike, mu2: ArrayLike) -> float:
     intersection = fuzzy_intersection(mu1, mu2)
     max_card = max(fuzzy_cardinality(mu1), fuzzy_cardinality(mu2))
     return safe_divide(fuzzy_cardinality(intersection), max_card, default=1.0)
 
 
-def similarity_matlab_S4(mu1: ArrayLike, mu2: ArrayLike) -> float:
-    return similarity_jaccard(fuzzy_negation(mu1), fuzzy_negation(mu2))
+def negated_intersection_over_max_cardinality(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    return intersection_over_max_cardinality(fuzzy_negation(mu1), fuzzy_negation(mu2))
 
 
-def similarity_matlab_S6(mu1: ArrayLike, mu2: ArrayLike) -> float:
-    return similarity_matlab_S5(fuzzy_negation(mu1), fuzzy_negation(mu2))
-
-
-def similarity_matlab_S8(mu1: ArrayLike, mu2: ArrayLike) -> float:
+def negated_overlap_coefficient(mu1: ArrayLike, mu2: ArrayLike) -> float:
     return similarity_overlap_coefficient(fuzzy_negation(mu1), fuzzy_negation(mu2))
 
 
-def similarity_matlab_S9(mu1: ArrayLike, mu2: ArrayLike) -> float:
+def negated_symdiff_over_max_negated_component(mu1: ArrayLike, mu2: ArrayLike) -> float:
     mu1, mu2 = map(np.asarray, (mu1, mu2))
     neg_mu1 = fuzzy_negation(mu1)
     neg_mu2 = fuzzy_negation(mu2)
     symm_diff = fuzzy_symmetric_difference(mu1, mu2)
     neg_symm_diff = fuzzy_negation(symm_diff)
     card_neg_symm_diff = fuzzy_cardinality(neg_symm_diff)
-
     comp1 = fuzzy_intersection(mu1, neg_mu2)
     comp2 = fuzzy_intersection(neg_mu1, mu2)
-
     max_card_neg_comp = max(
         fuzzy_cardinality(fuzzy_negation(comp1)),
         fuzzy_cardinality(fuzzy_negation(comp2)),
@@ -107,17 +104,15 @@ def similarity_matlab_S9(mu1: ArrayLike, mu2: ArrayLike) -> float:
     return safe_divide(card_neg_symm_diff, max_card_neg_comp, default=1.0)
 
 
-def similarity_matlab_S10(mu1: ArrayLike, mu2: ArrayLike) -> float:
+def negated_symdiff_over_min_negated_component(mu1: ArrayLike, mu2: ArrayLike) -> float:
     mu1, mu2 = map(np.asarray, (mu1, mu2))
     neg_mu1 = fuzzy_negation(mu1)
     neg_mu2 = fuzzy_negation(mu2)
     symm_diff = fuzzy_symmetric_difference(mu1, mu2)
     neg_symm_diff = fuzzy_negation(symm_diff)
     card_neg_symm_diff = fuzzy_cardinality(neg_symm_diff)
-
     comp1 = fuzzy_intersection(mu1, neg_mu2)
     comp2 = fuzzy_intersection(neg_mu1, mu2)
-
     min_card_neg_comp = min(
         fuzzy_cardinality(fuzzy_negation(comp1)),
         fuzzy_cardinality(fuzzy_negation(comp2)),
@@ -125,9 +120,33 @@ def similarity_matlab_S10(mu1: ArrayLike, mu2: ArrayLike) -> float:
     return safe_divide(card_neg_symm_diff, min_card_neg_comp, default=1.0)
 
 
-def similarity_matlab_S11(mu1: ArrayLike, mu2: ArrayLike) -> float:
+def one_minus_mean_symmetric_difference(mu1: ArrayLike, mu2: ArrayLike) -> float:
     symm_diff = fuzzy_symmetric_difference(mu1, mu2)
     return 1.0 - float(np.mean(symm_diff)) if symm_diff.size else 1.0
+
+
+def mean_one_minus_abs_diff(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    abs_diff = np.abs(np.asarray(mu1) - np.asarray(mu2))
+    return 1.0 - float(np.mean(abs_diff)) if abs_diff.size else 1.0
+
+
+def one_minus_abs_diff_over_sum_cardinality(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    denominator = fuzzy_cardinality(mu1) + fuzzy_cardinality(mu2)
+    return 1.0 - safe_divide(distance_hamming(mu1, mu2), denominator)
+
+
+def product_over_min_norm_squared(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    numerator = float(np.sum(mu1 * mu2))
+    denom = min(float(np.dot(mu1, mu1)), float(np.dot(mu2, mu2)))
+    if denom < 1e-12:
+        return 1.0 if np.allclose(mu1, 0) and np.allclose(mu2, 0) else 0.0
+    return numerator / denom
+
+
+def max_intersection(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    return float(np.max(fuzzy_intersection(mu1, mu2))) if np.asarray(mu1).size else 0.0
+
 
 # -----------------------------------------------------------------------------
 # 2. Distance‑based metrics and their similarity transforms
@@ -274,6 +293,60 @@ def similarity_matlab_metric1(
 # 6. Master orchestrator
 # -----------------------------------------------------------------------------
 
+def similarity_matlab_metric2(
+    mu_s1: ArrayLike,
+    mu_s2: ArrayLike,
+    x_values: ArrayLike,
+    *,
+    data_s1: ArrayLike | None = None,
+    data_s2: ArrayLike | None = None,
+) -> float:
+    """Implementation of MATLAB's similarity_metric2 which includes signal derivatives.
+    
+    This metric combines:
+    1. Uses both the original membership functions and their derivatives
+    2. Computes a weighted sum of memberships normalized by signal length
+    3. Captures shape similarity through derivative comparison
+    
+    Args:
+        mu_s1: Membership function values for signal 1
+        mu_s2: Membership function values for signal 2
+        x_values: Domain points where membership functions are evaluated
+        data_s1: Optional raw signal 1 data (for IQR delta calculation)
+        data_s2: Optional raw signal 2 data (for IQR delta calculation)
+    """
+    mu_s1, mu_s2, x_values = map(np.asarray, (mu_s1, mu_s2, x_values))
+    if mu_s1.size < 2 or mu_s2.size < 2:
+        return 0.0
+
+    # Compute derivatives of membership functions
+    d_mu_s1 = np.diff(mu_s1)
+    d_mu_s2 = np.diff(mu_s2)
+    x_values_deriv = x_values[:-1]  # One fewer point for derivatives
+
+    # Calculate delta (IQR difference) if raw data available, else use x-range
+    if data_s1 is not None and data_s2 is not None:
+        q1_s1, q3_s1 = np.percentile(data_s1, [25, 75])
+        q1_s2, q3_s2 = np.percentile(data_s2, [25, 75])
+        delta = abs(q1_s1 - q1_s2) + abs(q3_s1 - q3_s2)
+    else:
+        # Fallback: use range of x values
+        delta = np.ptp(x_values)
+
+    if delta < 1e-9:
+        # Further fallback - use average step size
+        step = np.mean(np.diff(x_values)) if x_values.size > 1 else 1e-3
+        delta = max(step, 1e-9)
+
+    # Compute weighted sum of memberships and their derivatives
+    # We use n-1 points to match derivative length
+    signal_contribution = mu_s1[:-1] * mu_s2[:-1]
+    deriv_contribution = np.clip(1.0 - np.abs(d_mu_s1 - d_mu_s2), 0, 1)
+    weighted_sum = float(np.sum(signal_contribution * deriv_contribution))
+
+    return safe_divide(weighted_sum, (len(mu_s1) - 1) * delta)
+
+
 def calculate_all_similarity_metrics(
     mu_s1: ArrayLike,
     mu_s2: ArrayLike,
@@ -314,15 +387,15 @@ def calculate_all_similarity_metrics(
         "Jaccard": similarity_jaccard,
         "Dice": similarity_dice,
         "OverlapCoefficient": similarity_overlap_coefficient,
-        "MATLAB_S1": similarity_matlab_S1,
-        "MATLAB_S3": similarity_matlab_S3,
-        "MATLAB_S5": similarity_matlab_S5,
-        "MATLAB_S4": similarity_matlab_S4,
-        "MATLAB_S6": similarity_matlab_S6,
-        "MATLAB_S8": similarity_matlab_S8,
-        "MATLAB_S9": similarity_matlab_S9,
-        "MATLAB_S10": similarity_matlab_S10,
-        "MATLAB_S11": similarity_matlab_S11,
+        "MeanMinOverMax": mean_min_over_max,
+        "MeanDiceCoefficient": mean_dice_coefficient,
+        "IntersectionOverMaxCardinality": intersection_over_max_cardinality,
+        "JaccardNegation": jaccard_negation,
+        "NegatedIntersectionOverMaxCardinality": negated_intersection_over_max_cardinality,
+        "NegatedOverlapCoefficient": negated_overlap_coefficient,
+        "NegatedSymDiffOverMaxNegatedComponent": negated_symdiff_over_max_negated_component,
+        "NegatedSymDiffOverMinNegatedComponent": negated_symdiff_over_min_negated_component,
+        "OneMinusMeanSymmetricDifference": one_minus_mean_symmetric_difference,
         # Distance‑based
         "Similarity_Hamming": similarity_hamming,
         "Similarity_Euclidean": similarity_euclidean,
@@ -330,14 +403,14 @@ def calculate_all_similarity_metrics(
         "Distance_Hamming": distance_hamming,
         "Distance_Euclidean": distance_euclidean,
         "Distance_Chebyshev": distance_chebyshev,
-        "MATLAB_S2_W": similarity_matlab_S2_W,
-        "MATLAB_S": similarity_matlab_S,
+        "MeanOneMinusAbsDiff": mean_one_minus_abs_diff,
+        "OneMinusAbsDiffOverSumCardinality": one_minus_abs_diff_over_sum_cardinality,
         # Correlation‑based
         "Cosine": similarity_cosine,
         "Pearson": similarity_pearson,
-        "MATLAB_P": similarity_matlab_P,
+        "ProductOverMinNormSquared": product_over_min_norm_squared,
         # Others
-        "MATLAB_T": similarity_matlab_T,
+        "MaxIntersection": max_intersection,
     }
 
     results: Dict[str, float] = {}
@@ -348,18 +421,17 @@ def calculate_all_similarity_metrics(
             print(f"Metric '{name}' failed: {exc}")
             results[name] = np.nan
 
-    # Aliases
-    results["MATLAB_M"] = results["Jaccard"]
-    results["MATLAB_S7"] = results["OverlapCoefficient"]
-    results["MATLAB_L"] = results["Similarity_Chebyshev"]
-
     # Metric1 (needs raw data)
-    results["MATLAB_Metric1"] = (
+    results["CustomMetric1_SumMembershipOverIQRDelta"] = (
         similarity_matlab_metric1(
             data_s1, data_s2, x_values, fs_method=fs_method, sigma_s2=sigma_s2
         )
         if data_s1 is not None and data_s2 is not None
         else np.nan
+    )
+    
+    results["CustomMetric2_DerivativeWeightedSimilarity"] = similarity_matlab_metric2(
+        mu_s1, mu_s2, x_values, data_s1=data_s1, data_s2=data_s2
     )
 
     # Preferred presentation order -------------------------------------------
@@ -376,24 +448,23 @@ def calculate_all_similarity_metrics(
         "Distance_Hamming",
         "Distance_Euclidean",
         "Distance_Chebyshev",
-        # MATLAB
-        "MATLAB_Metric1",
-        "MATLAB_S1",
-        "MATLAB_M",
-        "MATLAB_T",
-        "MATLAB_P",
-        "MATLAB_S2_W",
-        "MATLAB_S3",
-        "MATLAB_L",
-        "MATLAB_S",
-        "MATLAB_S4",
-        "MATLAB_S5",
-        "MATLAB_S6",
-        "MATLAB_S7",
-        "MATLAB_S8",
-        "MATLAB_S9",
-        "MATLAB_S10",
-        "MATLAB_S11",
+        # Custom metrics
+        "CustomMetric1_SumMembershipOverIQRDelta",
+        "CustomMetric2_DerivativeWeightedSimilarity",
+        # Renamed MATLAB metrics
+        "MeanMinOverMax",
+        "MeanDiceCoefficient",
+        "MaxIntersection",
+        "ProductOverMinNormSquared",
+        "MeanOneMinusAbsDiff",
+        "OneMinusAbsDiffOverSumCardinality",
+        "IntersectionOverMaxCardinality",
+        "JaccardNegation",
+        "NegatedIntersectionOverMaxCardinality",
+        "NegatedOverlapCoefficient",
+        "NegatedSymDiffOverMaxNegatedComponent",
+        "NegatedSymDiffOverMinNegatedComponent",
+        "OneMinusMeanSymmetricDifference",
     ]
 
     return {key: results[key] for key in preferred_order if key in results}

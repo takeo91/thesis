@@ -1,0 +1,26 @@
+[project]
+name = "thesis"
+version = "0.1.0"
+description = "Development and comparison of fuzzy similarity correlation metrics for sensor data in health application and assisted living environments"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "ipykernel",
+    "pylint",
+    "tqdm",
+    "plotly-express",
+    "scikit-learn",
+    "statsmodels",
+    "matplotlib",
+    "mass-ts"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest"
+]
+
+[tool.setuptools.packages.find]
+where = ["new_source"]
