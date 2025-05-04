@@ -2,7 +2,7 @@
 name = "thesis"
 version = "0.1.0"
 description = "Development and comparison of fuzzy similarity correlation metrics for sensor data in health application and assisted living environments"
-requires-python = ">=3.13"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "scipy",
