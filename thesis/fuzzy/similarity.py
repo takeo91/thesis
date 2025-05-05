@@ -15,7 +15,7 @@ from thesis.fuzzy.operations import (
     fuzzy_cardinality,
     fuzzy_symmetric_difference,
 )
-from thesis.fuzzy.membership import compute_ndg
+from thesis.fuzzy.membership import compute_ndg_streaming
 
 ArrayLike = Union[Sequence[float], np.ndarray]
 
@@ -278,7 +278,7 @@ def similarity_matlab_metric1(
         else:
             sigma_used = float(sigma_s2)
         sigma_used = max(sigma_used, 1e-9)
-        mu_s2 = compute_ndg(x_values_common, data_s2, sigma_used)
+        mu_s2 = compute_ndg_streaming(x_values_common, data_s2, sigma_used)
     elif fs_method == "kde":
         try:
             kde = gaussian_kde(data_s2)

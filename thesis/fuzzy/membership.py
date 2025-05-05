@@ -20,50 +20,45 @@ ArrayLike = Union[Sequence[float], np.ndarray]
 
 SQRT_2PI: Final[float] = math.sqrt(2.0 * math.pi)
 
+
 def compute_ndg_streaming(
     x_values: ArrayLike,
     sensor_data: ArrayLike,
     sigma: float,
+    *,
     chunk_size: int = 10_000,
     dtype: str | np.dtype = "float64",
 ) -> NDArray[np.floating]:
     """
-    Neighbour–Density Graph (streaming, memory–bounded).
-
-    Parameters
-    ----------
-    x_values
-        1-D coordinates at which to evaluate the density.  Length **N**.
-    sensor_data
-        1-D array of observed sensor samples.  Length **M**.  Must be non-empty.
-    sigma
-        Positive bandwidth of the Gaussian kernel.
-    chunk_size
-        How many `x_values` to process per iteration.  Trade-off RAM ↔ speed.
-    dtype
-        Accumulator dtype.  Use float32 when RAM is very tight.
+    Streaming Neighbour-Density Graph (matches dense KDE implementation).
 
     Returns
     -------
-    ndg : ndarray, shape (N,)
-        Normalised kernel-density estimate at each `x_values[i]`.
+    ndg : ndarray, shape (len(x_values),)
+        Kernel-density estimate
+
+            Σ_j  exp(-0.5 · (x_i - x_j)² / σ²)  / (√(2π) · σ · n)
+
+    identical to the dense reference, but memory-bounded.
     """
     x = np.asarray(x_values, dtype=dtype)
     data = np.asarray(sensor_data, dtype=dtype)
 
+    # Keep legacy contract: empty input → zeros not error
     if data.size == 0:
-        raise ValueError("sensor_data must contain at least one point.")
+        return np.zeros_like(x)
+
     if sigma <= 0:
         raise ValueError("sigma must be > 0.")
 
-    norm = 1.0 / (SQRT_2PI * sigma * data.size)
     inv_two_sigma_sq = 0.5 / (sigma * sigma)
+    norm = 1.0 / (SQRT_2PI * sigma * data.size)
     out = np.empty_like(x)
 
     for start in range(0, x.size, chunk_size):
-        end = start + chunk_size
-        x_chunk = x[start:end][:, None]            # shape (c,1)
-        d2 = (x_chunk - data[None, :]) ** 2        # (c,M) but *small* c
+        end = min(start + chunk_size, x.size)
+        x_chunk = x[start:end, None]                  # (c, 1)
+        d2 = (x_chunk - data[None, :]) ** 2           # (c, m)
         out[start:end] = np.exp(-d2 * inv_two_sigma_sq).sum(axis=1)
 
     return out * norm
@@ -85,17 +80,19 @@ def compute_ndg_dense(x_values: ArrayLike, sensor_data: ArrayLike, sigma: float)
     """
     x_values = np.asarray(x_values)[:, np.newaxis]  # Shape: (len(x_values), 1)
     sensor_data = np.asarray(sensor_data)[np.newaxis, :]  # Shape: (1, len(sensor_data))
-    
+    norm = 1.0 / (SQRT_2PI * sigma * sensor_data.size)
+
     if sensor_data.size == 0:
         return np.zeros(x_values.shape[0])  # Handle empty data
 
     squared_diffs = (x_values - sensor_data) ** 2
     # Use a minimum sigma to prevent division by zero
     safe_sigma_sq = max(sigma**2, 1e-18)
-    exponentials = np.exp(-squared_diffs / safe_sigma_sq)
+    inv_two_sigma_sq = 0.5 / (safe_sigma_sq )
+    exponentials = np.exp(-squared_diffs * inv_two_sigma_sq)
     ndg = exponentials.sum(axis=1)
-    
-    return ndg
+
+    return ndg * norm
 
 
 def compute_membership_function(
@@ -165,7 +162,7 @@ def compute_membership_function(
         sigma_val = 1e-9
 
     # Compute NDG and normalize to get membership function (mu)
-    ndg_s = compute_ndg(x_values, sensor_data, sigma_val)
+    ndg_s = compute_ndg_streaming(x_values, sensor_data, sigma_val)
     sum_ndg = np.sum(ndg_s)
     mu_s = ndg_s / sum_ndg if sum_ndg > 1e-9 else np.zeros_like(ndg_s)
 

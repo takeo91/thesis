@@ -20,7 +20,7 @@ class TestComputeNDG:
     def test_basic_functionality(self):
         """Test basic functionality of compute_ndg."""
         # Create sample data
-        sensor_data = np.array([3.0, 5.0, 7.0])
+        sensor_data = np.array([1.0, 5.0, 9.0])
         sigma = 1.0
         result = compute_ndg_streaming(x_range, sensor_data, sigma)
         
@@ -80,13 +80,21 @@ class TestComputeNDG:
         assert abs(x_range[max_idx] - 5.0) < 0.2
 
 
-    def test_streaming_matches_dense():
+    def test_streaming_matches_dense(self):
         rng = np.random.default_rng(42)
         data = rng.normal(size=500)
         x = np.linspace(-3, 3, 500)
         dense = compute_ndg_dense(x, data, 0.4)
         stream = compute_ndg_streaming(x, data, 0.4, chunk_size=100)
         np.testing.assert_allclose(stream, dense, rtol=1e-3, atol=1e-6)
+
+    def test_three_peaks_default_sigma(self):
+        x = np.arange(0, 10.1, 0.1)
+        data = np.array([1.0, 5.0, 9.0])
+        ndg = compute_ndg_streaming(x, data, sigma=1.0)
+        peak_idx = [i for i in range(1, len(ndg)-1) if ndg[i-1] < ndg[i] > ndg[i+1]]
+        assert len(peak_idx) == 3
+
 class TestComputeMembershipFunction:
     """Tests for compute_membership_function."""
     
