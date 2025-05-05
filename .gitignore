@@ -1,4 +1,4 @@
-./Data/*
+Data/*
 results
 ./results/*
 __pycache__
