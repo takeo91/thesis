@@ -69,7 +69,7 @@ import matplotlib.pyplot as plt
 from thesis.core.utils import extract_column_names, extract_metadata, extract_labels
 
 # --------------------------------------------------------------------
-DATA_ROOT = pathlib.Path(os.environ.get("THESIS_DATA", pathlib.Path.home() / "Data"))
+DATA_ROOT = pathlib.Path(os.environ.get("THESIS_DATA", pathlib.Path.home() / "personal/thesis/Data"))
 OPP_ROOT = DATA_ROOT / "OpportunityUCIDataset"
 PAMAP_ROOT = DATA_ROOT / "PAMAP2_Dataset"
 

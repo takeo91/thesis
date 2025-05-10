@@ -169,10 +169,48 @@ def compute_membership_function(
     return x_values, mu_s, sigma_val
 
 
+def compute_kde_density(x: ArrayLike, data: ArrayLike, sigma: float = None) -> NDArray[np.floating]:
+    """
+    Compute 1-D Gaussian KDE at points x with bandwidth sigma.
+    
+    Args:
+        x: Points to evaluate density at
+        data: Input data points
+        sigma: Bandwidth parameter (in standard deviation units)
+              If None, uses scipy's default bandwidth selection (Scott's rule)
+        
+    Returns:
+        Array of density values normalized to integrate to 1.0
+    """
+    x = np.asarray(x)
+    data = np.asarray(data)
+    
+    if data.size < 2:
+        return np.full_like(x, 1 / max(x.size, 1))
+    
+    if sigma is not None:
+        # Use sigma to override Scott's factor
+        bw = sigma / max(np.std(data), 1e-9)
+        kde = gaussian_kde(dataset=data, bw_method=bw)
+    else:
+        # Use default bandwidth selection
+        kde = gaussian_kde(dataset=data)
+        
+    density = np.clip(kde(x), 1e-15, None)
+    
+    # Normalize to integrate to 1.0
+    integral = np.trapezoid(density, x=x)
+    if integral > 1e-15:
+        return density / integral
+    else:
+        return np.full_like(x, 1 / max(x.size, 1))
+
+
 def compute_membership_function_kde(
     sensor_data: ArrayLike, 
     x_values: Optional[ArrayLike] = None, 
-    num_points: int = 500
+    num_points: int = 500,
+    sigma: Optional[float] = None
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute a normalized membership function using Gaussian KDE.
@@ -181,6 +219,7 @@ def compute_membership_function_kde(
         sensor_data: Input data points.
         x_values: Domain for the membership function. If None, calculated from data range.
         num_points: Number of points for x_values if automatically calculated.
+        sigma: Optional bandwidth parameter. If None, uses scipy's default.
 
     Returns:
         Tuple containing:
@@ -214,18 +253,16 @@ def compute_membership_function_kde(
 
     # Compute KDE and normalize
     try:
-        kde = gaussian_kde(sensor_data)
-        mu_s = kde.evaluate(x_values)
-        mu_s = np.clip(mu_s, 0, None)  # Ensure non-negative
-        sum_mu = np.sum(mu_s)
-        if sum_mu > 1e-9:
-            mu_s /= sum_mu  # Normalize
+        # Use compute_kde_density for the core KDE computation
+        kde_result = compute_kde_density(x_values, sensor_data, sigma)
+        
+        # Normalize by sum instead of integral to maintain compatibility with original function
+        sum_kde = np.sum(kde_result)
+        if sum_kde > 1e-9:
+            mu_s = kde_result / sum_kde
         else:
-            mu_s = np.zeros_like(mu_s)
-    except (
-        np.linalg.LinAlgError,
-        ValueError,
-    ):  # Handle LinAlgError or cases like all points identical
+            mu_s = np.zeros_like(kde_result)
+    except (np.linalg.LinAlgError, ValueError):
         # Fallback: return zeros if KDE fails
         mu_s = np.zeros_like(x_values)
 
@@ -259,7 +296,15 @@ def compute_membership_functions(
             sensor_data, x_values, sigma=sigma
         )
     elif method == "kde":
-        x_values_calc, mu = compute_membership_function_kde(sensor_data, x_values)
+        # Process sigma for KDE if it's a string or None
+        kde_sigma = None
+        if sigma is not None and not isinstance(sigma, str):
+            kde_sigma = float(sigma)
+            
+        x_values_calc, mu = compute_membership_function_kde(
+            sensor_data, x_values, sigma=kde_sigma
+        )
+        
         # Ensure output mu has same shape as input x_values even if internal calculation used different points
         if x_values_calc.shape != x_values.shape or not np.allclose(
             x_values_calc, x_values
