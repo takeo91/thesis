@@ -103,6 +103,36 @@ Here's a breakdown of the steps involved in this project:
     *   Since normalization removes original scale information (e.g., standard deviation, range), which is important for comparing sensors in a real system, the decision was made to **calculate and store scale features (standard deviation, range) from the *original* sensor data** alongside the fuzzy metrics.
     *   The proposed approach for comparing/searching sensors in the final application is to use the **fuzzy similarity score (calculated on normalized data with sigma ~0.01-0.1) in conjunction with these explicit, stored scale features**. Relative sigma options (e.g., `r0.01`) were not selected during the initial optimization on normalized data but remain an option if analysis shifts to non-normalized data.
 
+## Datasets
+
+This project utilizes two primary datasets for analysis and evaluation:
+
+### OPPORTUNITY Activity Recognition Dataset
+
+The OPPORTUNITY Dataset contains sensor readings from subjects performing daily activities while wearing multiple sensors. It's designed to benchmark human activity recognition algorithms.
+
+- **Source**: [UCI Machine Learning Repository: OPPORTUNITY Activity Recognition](https://archive.ics.uci.edu/dataset/226/opportunity+activity+recognition)
+- **Features**: 
+  - Body-worn sensors (7 IMUs, 12 3D acceleration sensors)
+  - Object sensors (12 objects with 3D acceleration and 2D rate of turn)
+  - Ambient sensors (13 switches and 8 3D acceleration sensors)
+- **Recordings**: 4 users, 6 runs per user (5 Activity of Daily Living runs and 1 drill run)
+- **Annotations**: Activities labeled at multiple levels (locomotion modes, low-level actions, mid-level gestures, high-level activities)
+
+### PAMAP2 Physical Activity Monitoring Dataset
+
+The PAMAP2 Dataset contains data of various physical activities performed by subjects wearing inertial measurement units and a heart rate monitor.
+
+- **Source**: [UCI Machine Learning Repository: PAMAP2 Physical Activity Monitoring](https://archive.ics.uci.edu/dataset/231/pamap2+physical+activity+monitoring)
+- **Features**:
+  - 3 Colibri wireless inertial measurement units (100Hz)
+  - Heart rate monitor (~9Hz)
+- **Activities**: 18 different physical activities (walking, cycling, playing soccer, etc.)
+- **Subjects**: 9 subjects
+- **Protocol**: Each subject followed a protocol containing 12 different activities, with some subjects performing additional optional activities
+
+Both datasets provide rich multimodal sensor data suitable for evaluating fuzzy similarity metrics in the context of health applications and assisted living environments.
+
 ## How to Run
 
 1.  Ensure Python environment with necessary libraries (pandas, numpy, matplotlib, seaborn, scikit-learn, joblib) is set up.

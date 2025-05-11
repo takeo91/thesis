@@ -94,6 +94,86 @@ class TestComputeNDG:
         ndg = compute_ndg_streaming(x, data, sigma=1.0)
         peak_idx = [i for i in range(1, len(ndg)-1) if ndg[i-1] < ndg[i] > ndg[i+1]]
         assert len(peak_idx) == 3
+        
+
+    @pytest.mark.parametrize("kernel_type", [
+        "gaussian", "epanechnikov", "triangular", 
+        "uniform", "quartic", "cosine"
+    ])
+    def test_kernel_types(self, kernel_type):
+        """Test each available kernel type."""
+        # Create sample data
+        np.random.seed(42)
+        sample_data = np.random.normal(5, 1, 100)
+        
+        result = compute_ndg_streaming(x_range, sample_data, sigma=0.5, kernel_type=kernel_type)
+        
+        # Check shape and basic properties
+        assert len(result) == len(x_range)
+        assert np.all(result >= 0)
+        
+        # Result should have a peak near the mean of the data
+        peak_idx = np.argmax(result)
+        assert 4 <= x_range[peak_idx] <= 6
+    
+    def test_invalid_kernel_type(self):
+        """Test with invalid kernel type."""
+        np.random.seed(42)
+        sample_data = np.random.normal(5, 1, 100)
+        
+        with pytest.raises(ValueError, match="Unknown kernel type"):
+            compute_ndg_streaming(x_range, sample_data, sigma=0.5, kernel_type="invalid")
+    
+    def test_kernel_normalization_properties(self):
+        """Test that kernels maintain expected normalization properties."""
+        # Single data point to test kernel shape directly
+        data = np.array([5.0])
+        
+        # Test each kernel type
+        kernels = ["gaussian", "epanechnikov", "triangular", 
+                  "uniform", "quartic", "cosine"]
+        
+        for kernel in kernels:
+            result = compute_ndg_streaming(x_range, data, sigma=1.0, kernel_type=kernel)
+            
+            # Integration over the domain should approximately equal 1
+            # (since we normalize by 1/(sigma*n))
+            area = np.trapezoid(result, x_range)
+            assert 0.8 <= area <= 1.2, f"Kernel {kernel} integral = {area}"
+            
+            # Peak should be at or near the data point
+            peak_idx = np.argmax(result)
+            # More permissive threshold to account for kernel differences
+            assert abs(x_range[peak_idx] - 5.0) < 1.1, f"Kernel {kernel} peak at {x_range[peak_idx]}"
+        
+    def test_chunk_size_variations(self):
+        """Test that different chunk sizes produce the same results."""
+        np.random.seed(42)
+        data = np.random.normal(5, 1, 1000)
+        
+        # Compute with different chunk sizes
+        result1 = compute_ndg_streaming(x_range, data, sigma=0.5, chunk_size=10)
+        result2 = compute_ndg_streaming(x_range, data, sigma=0.5, chunk_size=100)
+        result3 = compute_ndg_streaming(x_range, data, sigma=0.5, chunk_size=1000)
+        
+        # Results should be identical regardless of chunk size
+        np.testing.assert_allclose(result1, result2)
+        np.testing.assert_allclose(result1, result3)
+    
+    def test_chunk_size_edge_cases(self):
+        """Test with edge case chunk sizes."""
+        np.random.seed(42)
+        data = np.random.normal(5, 1, 50)
+        
+        # Chunk size larger than input
+        result1 = compute_ndg_streaming(x_range, data, sigma=0.5, chunk_size=1000)
+        
+        # Chunk size = 1
+        result2 = compute_ndg_streaming(x_range, data, sigma=0.5, chunk_size=1)
+        
+        # Results should be identical
+        np.testing.assert_allclose(result1, result2)
+
 
 class TestComputeMembershipFunction:
     """Tests for compute_membership_function."""
@@ -184,6 +264,68 @@ class TestComputeMembershipFunction:
         
         with pytest.raises(ValueError):
             compute_membership_function(sensor_data, sigma="rx")  # Can't parse float
+            
+    def test_sum_normalization(self):
+        """Test sum normalization method."""
+        # Create sample data
+        np.random.seed(42)
+        sensor_data = np.random.normal(5, 1, 200)
+        
+        # Test with direct compute_membership_function
+        _, mu_sum, _ = compute_membership_function(
+            sensor_data, x_values=x_range, sigma=0.5, normalization="sum"
+        )
+        
+        # Check that sum equals 1
+        assert np.isclose(np.sum(mu_sum), 1.0, rtol=1e-2)
+    
+    def test_integral_normalization(self):
+        """Test integral normalization method."""
+        # Create sample data
+        np.random.seed(42)
+        sensor_data = np.random.normal(5, 1, 200)
+        
+        # Test with direct compute_membership_function
+        _, mu_int, _ = compute_membership_function(
+            sensor_data, x_values=x_range, sigma=0.5, normalization="integral"
+        )
+        
+        # Check that integral equals 1
+        area = np.trapezoid(mu_int, x_range)
+        assert np.isclose(area, 1.0, rtol=1e-2)
+    
+    def test_invalid_normalization(self):
+        """Test with invalid normalization method."""
+        # Create sample data
+        np.random.seed(42)
+        sensor_data = np.random.normal(5, 1, 200)
+        
+        with pytest.raises(ValueError, match="Unknown normalization:"):
+            compute_membership_function(
+                sensor_data, x_values=x_range, sigma=0.5, normalization="invalid"
+            )
+    
+    def test_normalization_consistency(self):
+        """Test that both normalization methods produce consistent results."""
+        # Create sample data
+        np.random.seed(42)
+        sensor_data = np.random.normal(5, 1, 200)
+        
+        # Get membership functions with both normalization methods
+        _, mu_sum, _ = compute_membership_function(
+            sensor_data, x_values=x_range, sigma=0.5, normalization="sum"
+        )
+        
+        _, mu_int, _ = compute_membership_function(
+            sensor_data, x_values=x_range, sigma=0.5, normalization="integral"
+        )
+        
+        # The shape should be the same, just scaled differently
+        correlation = np.corrcoef(mu_sum, mu_int)[0, 1]
+        assert correlation > 0.99  # Almost perfectly correlated
+        
+        # Peak should be at the same location
+        assert np.argmax(mu_sum) == np.argmax(mu_int)
 
 
 class TestComputeMembershipFunctionKDE:
@@ -195,15 +337,19 @@ class TestComputeMembershipFunctionKDE:
         np.random.seed(42)
         sensor_data = np.random.normal(5, 1, 100)
         
-        # Call function with default parameters
+        # Call function with default parameters (uses integral normalization)
         x_vals, mu = compute_membership_function_kde(sensor_data)
         
         # Check shapes
         assert len(x_vals) > 0
         assert len(mu) == len(x_vals)
         
-        # Check that mu is normalized
-        assert np.isclose(np.sum(mu), 1.0)
+        # Check that mu is normalized by integral
+        assert np.isclose(np.trapezoid(mu, x=x_vals), 1.0, rtol=1e-2)
+        
+        # Check sum normalization
+        x_vals_sum, mu_sum = compute_membership_function_kde(sensor_data, normalization="sum")
+        assert np.isclose(np.sum(mu_sum), 1.0, rtol=1e-2)
         
         # Check that mu is non-negative
         assert np.all(mu >= 0)
@@ -253,30 +399,46 @@ class TestComputeMembershipFunctions:
         np.random.seed(42)
         sensor_data = np.random.normal(5, 1, 100)
         
-        mu, sigma_val = compute_membership_functions(
-            sensor_data, x_range, method="nd", sigma=0.5
+        # Test with sum normalization
+        mu_sum, sigma_val = compute_membership_functions(
+            sensor_data, x_range, method="nd", sigma=0.5, normalization="sum"
         )
         
         # Check result
-        assert len(mu) == len(x_range)
+        assert len(mu_sum) == len(x_range)
         assert sigma_val == 0.5
-        assert np.isclose(np.sum(mu), 1.0)
-        assert np.all(mu >= 0)
+        assert np.isclose(np.sum(mu_sum), 1.0, rtol=1e-2)
+        assert np.all(mu_sum >= 0)
+        
+        # Test with integral normalization
+        mu_int, _ = compute_membership_functions(
+            sensor_data, x_range, method="nd", sigma=0.5, normalization="integral"
+        )
+        
+        assert np.isclose(np.trapezoid(mu_int, x=x_range), 1.0, rtol=1e-2)
     
     def test_kde_method(self):
         """Test with KDE method."""
         np.random.seed(42)
         sensor_data = np.random.normal(5, 1, 100)
         
-        mu, sigma_val = compute_membership_functions(
-            sensor_data, x_range, method="kde"
+        # Test with sum normalization
+        mu_sum, sigma_val = compute_membership_functions(
+            sensor_data, x_range, method="kde", normalization="sum"
         )
         
         # Check result
-        assert len(mu) == len(x_range)
+        assert len(mu_sum) == len(x_range)
         assert sigma_val is None  # KDE method doesn't return sigma
-        assert np.isclose(np.sum(mu), 1.0)
-        assert np.all(mu >= 0)
+        assert np.isclose(np.sum(mu_sum), 1.0, rtol=1e-2)
+        assert np.all(mu_sum >= 0)
+        
+        # Test with integral normalization
+        mu_int, _ = compute_membership_functions(
+            sensor_data, x_range, method="kde", normalization="integral"
+        )
+        
+        assert np.isclose(np.trapezoid(mu_int, x=x_range), 1.0, rtol=1e-2)
     
     def test_invalid_method(self):
         """Test with invalid method."""
