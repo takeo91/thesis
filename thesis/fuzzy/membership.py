@@ -26,20 +26,48 @@ def compute_ndg_streaming(
     sensor_data: ArrayLike,
     sigma: float,
     *,
+    kernel_type: str = "gaussian",
     chunk_size: int = 10_000,
     dtype: str | np.dtype = "float64",
 ) -> NDArray[np.floating]:
     """
-    Streaming Neighbour-Density Graph (matches dense KDE implementation).
+    Streaming Neighbour-Density Graph with selectable kernel functions.
+
+    Parameters
+    ----------
+    x_values : array-like
+        Points at which to evaluate the density
+    sensor_data : array-like
+        Data points from which to estimate the density
+    sigma : float
+        Bandwidth parameter, controls the smoothness of the density estimate
+    kernel_type : str, default="gaussian"
+        Type of kernel to use. Options:
+        - "gaussian": Standard normal kernel (default)
+        - "epanechnikov": Optimal kernel in terms of mean squared error
+        - "triangular": Linear falloff kernel
+        - "uniform": Rectangular/box kernel
+        - "quartic": Biweight kernel, smoother than Epanechnikov
+        - "cosine": Cosine-based kernel with smooth falloff
+    chunk_size : int, default=10_000
+        Size of chunks for memory-efficient processing
+    dtype : str or numpy.dtype, default="float64"
+        Data type for computation
+    normalize : bool, default=True
+        Whether to normalize by the number of data points and kernel constant
+        Set to False to get raw values for custom normalization later
 
     Returns
     -------
     ndg : ndarray, shape (len(x_values),)
-        Kernel-density estimate
+        Kernel-density estimate using the specified kernel function
 
-            Σ_j  exp(-0.5 · (x_i - x_j)² / σ²)  / (√(2π) · σ · n)
-
-    identical to the dense reference, but memory-bounded.
+    Notes
+    -----
+    For the Gaussian kernel, the formula is:
+        Σ_j  exp(-0.5 · (x_i - x_j)² / σ²)  / (√(2π) · σ · n)
+    
+    Other kernels use their respective formulations with appropriate normalization.
     """
     x = np.asarray(x_values, dtype=dtype)
     data = np.asarray(sensor_data, dtype=dtype)
@@ -50,16 +78,56 @@ def compute_ndg_streaming(
 
     if sigma <= 0:
         raise ValueError("sigma must be > 0.")
+    
+    # Define kernel functions and their normalization constants
+    if kernel_type == "gaussian":
+        def kernel_func(d2, inv_two_sigma_sq):
+            return np.exp(-d2 * inv_two_sigma_sq)
+        norm = 1.0 / (SQRT_2PI * sigma * data.size)
+        
+    elif kernel_type == "epanechnikov":
+        def kernel_func(d2, inv_two_sigma_sq):
+            u2 = d2 * inv_two_sigma_sq * 2  # u² = (x-x_j)²/σ²
+            return 0.75 * (1 - u2) * (u2 <= 1)
+        norm = 1.0 / (sigma * data.size)
+        
+    elif kernel_type == "triangular":
+        def kernel_func(d2, inv_two_sigma_sq):
+            u = np.sqrt(d2 * inv_two_sigma_sq * 2)  # u = |x-x_j|/σ
+            return (1 - u) * (u <= 1)
+        norm = 1.0 / (sigma * data.size)
+        
+    elif kernel_type == "uniform":
+        def kernel_func(d2, inv_two_sigma_sq):
+            u = np.sqrt(d2 * inv_two_sigma_sq * 2)  # u = |x-x_j|/σ
+            return 0.5 * (u <= 1)
+        norm = 1.0 / (sigma * data.size)
+        
+    elif kernel_type == "quartic":
+        def kernel_func(d2, inv_two_sigma_sq):
+            u2 = d2 * inv_two_sigma_sq * 2  # u² = (x-x_j)²/σ²
+            return (15/16) * ((1 - u2)**2) * (u2 <= 1)
+        norm = 1.0 / (sigma * data.size)
+        
+    elif kernel_type == "cosine":
+        def kernel_func(d2, inv_two_sigma_sq):
+            u = np.sqrt(d2 * inv_two_sigma_sq * 2)  # u = |x-x_j|/σ
+            return (np.pi/4) * np.cos(np.pi*u/2) * (u <= 1)
+        norm = 1.0 / (sigma * data.size)
+        
+    else:
+        raise ValueError(f"Unknown kernel type: {kernel_type}. " 
+                        f"Supported types: gaussian, epanechnikov, triangular, " 
+                        f"uniform, quartic, cosine")
 
     inv_two_sigma_sq = 0.5 / (sigma * sigma)
-    norm = 1.0 / (SQRT_2PI * sigma * data.size)
     out = np.empty_like(x)
 
     for start in range(0, x.size, chunk_size):
         end = min(start + chunk_size, x.size)
         x_chunk = x[start:end, None]                  # (c, 1)
         d2 = (x_chunk - data[None, :]) ** 2           # (c, m)
-        out[start:end] = np.exp(-d2 * inv_two_sigma_sq).sum(axis=1)
+        out[start:end] = kernel_func(d2, inv_two_sigma_sq).sum(axis=1)
 
     return out * norm
 
@@ -99,7 +167,9 @@ def compute_membership_function(
     sensor_data: ArrayLike, 
     x_values: Optional[ArrayLike] = None, 
     sigma: Optional[Union[float, str]] = None, 
-    num_points: int = 500
+    num_points: int = 500,
+    kernel_type: str = "gaussian",
+    normalization: str = "sum"
 ) -> Tuple[np.ndarray, np.ndarray, float]:
     """
     Compute a normalized membership function using the Neighbor Density Graph method.
@@ -110,6 +180,11 @@ def compute_membership_function(
         sigma: Bandwidth parameter. If None, uses 0.1 * data range.
                If str like 'r0.2', uses 0.2 * data range.
         num_points: Number of points for x_values if automatically calculated.
+        kernel_type: Type of kernel to use (gaussian, epanechnikov, triangular, etc.).
+                    See compute_ndg_streaming for all options.
+        normalization: Method to normalize the membership function:
+                      - "sum": Sum of all values equals 1 (traditional fuzzy membership)
+                      - "integral": Integral equals 1 (probability density function)
 
     Returns:
         Tuple containing:
@@ -161,10 +236,18 @@ def compute_membership_function(
     if sigma_val < 1e-9:
         sigma_val = 1e-9
 
-    # Compute NDG and normalize to get membership function (mu)
-    ndg_s = compute_ndg_streaming(x_values, sensor_data, sigma_val)
-    sum_ndg = np.sum(ndg_s)
-    mu_s = ndg_s / sum_ndg if sum_ndg > 1e-9 else np.zeros_like(ndg_s)
+    # Compute NDG
+    ndg_s = compute_ndg_streaming(x_values, sensor_data, sigma_val, kernel_type=kernel_type)
+    
+    # Normalize based on selected method
+    if normalization == "sum":
+        sum_ndg = np.sum(ndg_s)
+        mu_s = ndg_s / sum_ndg if sum_ndg > 1e-9 else np.zeros_like(ndg_s)
+    elif normalization == "integral":
+        integral = np.trapezoid(ndg_s, x=x_values)
+        mu_s = ndg_s / integral if integral > 1e-9 else np.zeros_like(ndg_s)
+    else:
+        raise ValueError(f"Unknown normalization: {normalization}. Use 'sum' or 'integral'.")
 
     return x_values, mu_s, sigma_val
 
@@ -210,7 +293,8 @@ def compute_membership_function_kde(
     sensor_data: ArrayLike, 
     x_values: Optional[ArrayLike] = None, 
     num_points: int = 500,
-    sigma: Optional[float] = None
+    sigma: Optional[float] = None,
+    normalization: str = "integral"
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute a normalized membership function using Gaussian KDE.
@@ -220,6 +304,9 @@ def compute_membership_function_kde(
         x_values: Domain for the membership function. If None, calculated from data range.
         num_points: Number of points for x_values if automatically calculated.
         sigma: Optional bandwidth parameter. If None, uses scipy's default.
+        normalization: Method to normalize the membership function:
+                      - "sum": Sum of all values equals 1 (traditional fuzzy membership)
+                      - "integral": Integral equals 1 (probability density function)
 
     Returns:
         Tuple containing:
@@ -256,12 +343,23 @@ def compute_membership_function_kde(
         # Use compute_kde_density for the core KDE computation
         kde_result = compute_kde_density(x_values, sensor_data, sigma)
         
-        # Normalize by sum instead of integral to maintain compatibility with original function
-        sum_kde = np.sum(kde_result)
-        if sum_kde > 1e-9:
-            mu_s = kde_result / sum_kde
+        # Apply the requested normalization method
+        if normalization == "sum":
+            sum_kde = np.sum(kde_result)
+            if sum_kde > 1e-9:
+                mu_s = kde_result / sum_kde
+            else:
+                mu_s = np.zeros_like(kde_result)
+        elif normalization == "integral":
+            # Density is already normalized to integrate to 1.0 by compute_kde_density
+            # But we double-check to ensure numerical stability
+            integral = np.trapezoid(kde_result, x=x_values)
+            if integral > 1e-9:
+                mu_s = kde_result / integral
+            else:
+                mu_s = np.zeros_like(kde_result)
         else:
-            mu_s = np.zeros_like(kde_result)
+            raise ValueError(f"Unknown normalization: {normalization}. Use 'sum' or 'integral'.")
     except (np.linalg.LinAlgError, ValueError):
         # Fallback: return zeros if KDE fails
         mu_s = np.zeros_like(x_values)
@@ -273,7 +371,9 @@ def compute_membership_functions(
     sensor_data: ArrayLike, 
     x_values: ArrayLike, 
     method: str = "nd", 
-    sigma: Optional[Union[float, str]] = None
+    sigma: Optional[Union[float, str]] = None,
+    kernel_type: str = "gaussian",
+    normalization: str = "integral"
 ) -> Tuple[np.ndarray, Optional[float]]:
     """
     Wrapper function to compute membership function using the specified method.
@@ -282,7 +382,10 @@ def compute_membership_functions(
         sensor_data: The sensor data.
         x_values: The x-values over which to compute the membership function.
         method: Method to use ('nd' or 'kde').
-        sigma: Sigma for 'nd' method. Ignored for 'kde'.
+        sigma: Sigma for 'nd' method or KDE. If relative sigma (e.g., 'r0.1') it's only applied for 'nd'. 
+        kernel_type: Type of kernel to use for 'nd' method. Ignored for 'kde'.
+                    Options: gaussian, epanechnikov, triangular, uniform, quartic, cosine.
+        normalization: Normalization method ('sum' or 'integral') for membership function.
 
     Returns:
         Tuple containing:
@@ -293,7 +396,8 @@ def compute_membership_functions(
     
     if method == "nd":
         x_values_calc, mu, sigma_val = compute_membership_function(
-            sensor_data, x_values, sigma=sigma
+            sensor_data, x_values, sigma=sigma, kernel_type=kernel_type, 
+            normalization=normalization
         )
     elif method == "kde":
         # Process sigma for KDE if it's a string or None
@@ -302,7 +406,7 @@ def compute_membership_functions(
             kde_sigma = float(sigma)
             
         x_values_calc, mu = compute_membership_function_kde(
-            sensor_data, x_values, sigma=kde_sigma
+            sensor_data, x_values, sigma=kde_sigma, normalization=normalization
         )
         
         # Ensure output mu has same shape as input x_values even if internal calculation used different points
@@ -314,11 +418,22 @@ def compute_membership_functions(
             )
             mu = interp_mu(x_values)
             mu = np.clip(mu, 0, None)
-            sum_mu = np.sum(mu)
-            if sum_mu > 1e-9:
-                mu /= sum_mu
+            
+            # Apply selected normalization
+            if normalization == "sum":
+                sum_mu = np.sum(mu)
+                if sum_mu > 1e-9:
+                    mu /= sum_mu
+                else:
+                    mu = np.zeros_like(mu)
+            elif normalization == "integral":
+                integral = np.trapezoid(mu, x=x_values)
+                if integral > 1e-9:
+                    mu /= integral
+                else:
+                    mu = np.zeros_like(mu)
             else:
-                mu = np.zeros_like(mu)
+                raise ValueError(f"Unknown normalization: {normalization}. Use 'sum' or 'integral'.")
     else:
         raise ValueError("Unknown method for membership function. Use 'nd' or 'kde'.")
         
