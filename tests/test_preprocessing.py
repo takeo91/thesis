@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from thesis.core.preprocessing import normalize_data, standardize_data
 

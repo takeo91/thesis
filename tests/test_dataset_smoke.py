@@ -14,7 +14,7 @@ def test_dataset_smoke(loader, body_part):
 
     # Skip if dataset is empty
     if dataset.df.empty:
-        pytest.skip(f"Dataset is empty - skipping smoke test")
+        pytest.skip("Dataset is empty - skipping smoke test")
     
     try:
         # Get accelerometer data for known working body part
