@@ -60,7 +60,7 @@ from __future__ import annotations
 import os
 import pathlib
 import abc
-from typing import Dict, List, Optional, Union, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -74,8 +74,6 @@ OPP_ROOT = DATA_ROOT / "OpportunityUCIDataset"
 PAMAP_ROOT = DATA_ROOT / "PAMAP2_Dataset"
 
 __all__ = [
-    "load_opportunity", 
-    "load_pamap2", 
     "SensorDataset", 
     "OpportunityDataset", 
     "PAMAP2Dataset",

@@ -24,9 +24,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import gaussian_kde
 from sklearn.model_selection import KFold
-from typing import Tuple, List, Dict, Any, Optional, Union
+from typing import Tuple, List, Dict, Any, Union
 import warnings
 
 from thesis.fuzzy.membership import compute_membership_functions

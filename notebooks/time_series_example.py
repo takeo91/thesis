@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy import stats
 
 # Thesis package imports
 from thesis.fuzzy.membership import compute_membership_function

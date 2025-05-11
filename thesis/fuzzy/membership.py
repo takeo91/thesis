@@ -7,7 +7,7 @@ from sensor data using neighbor density method.
 
 from __future__ import annotations
 
-from typing import Tuple, Union, Sequence, Optional, Final
+from typing import Tuple, Union, Optional, Final
 from numpy.typing import ArrayLike, NDArray
 
 import numpy as np
@@ -15,9 +15,7 @@ from scipy.interpolate import interp1d
 from scipy.stats import gaussian_kde
 import math
 
-# Type definitions
-ArrayLike = Union[Sequence[float], np.ndarray]
-
+# Constants
 SQRT_2PI: Final[float] = math.sqrt(2.0 * math.pi)
 
 
