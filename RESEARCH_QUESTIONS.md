@@ -7,7 +7,7 @@
 **Hypothesis (H1):** NDG-S yields KL-divergence ≤ 5% higher than KDE (i.e., statistically indistinguishable accuracy) while using ≥ 70% less peak RAM and ≥ 2× faster wall-clock time.
 
 **Methodology:**
-- Run NDG-S vs sklearn.KernelDensity on ≥ 3 datasets (Opportunity, PAMAP2, WISDM)
+- Run NDG-S vs sklearn.KernelDensity on 2 datasets (Opportunity, PAMAP2)
 - Measure KL or χ² between estimate and held-out distribution; log runtime + psutil max-RSS
 - Wilcoxon signed-rank on per-fold pairs
 

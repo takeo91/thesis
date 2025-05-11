@@ -1,0 +1,18 @@
+{
+  "time_comparison": {
+    "ndg_mean": 0.013695238033930461,
+    "kde_mean": 0.00772702693939209,
+    "speedup_factor": 1.7723812976647795
+  },
+  "memory_comparison": {
+    "ndg_mean_mb": 1.4242838541666667,
+    "kde_mean_mb": -1.4153645833333333,
+    "memory_ratio": -1.0063017479300829
+  },
+  "accuracy_comparison": {
+    "mean_kl_div": 0.00020733196168409133,
+    "mean_chi_squared": 0.0003996206184467324,
+    "max_kl_div": 0.002546819237951944,
+    "min_kl_div": -1.7919067488024096e-06
+  }
+}
