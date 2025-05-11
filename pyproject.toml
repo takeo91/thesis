@@ -15,7 +15,9 @@ dependencies = [
     "statsmodels",
     "matplotlib",
     "mass-ts",
+    "scipy",
     "pytest-cov>=6.1.1",
+    "seaborn>=0.13.2",
 ]
 
 [project.optional-dependencies]

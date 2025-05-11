@@ -1,7 +1,4 @@
-./Data/*
-Data
-results
-./results/*
+Data/*
 __pycache__
 venv
 .venv

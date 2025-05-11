@@ -1,0 +1,28 @@
+dataset,fold,sigma,kl_div,chi2,wall_sec,peak_rss_mb
+opportunity,0,0.2,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+2.0662599123629573e-09,4.1313335556341955e-09,1.295,598.8
+opportunity,0,0.4,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+1.4878197179992022e-08,2.9754369216547346e-08,1.154,796.4
+opportunity,0,0.8,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+-1.0680912976670284e-07,2.2059447081242674e-07,1.297,595.0
+opportunity,1,0.2,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+1.6704881377843195e-09,3.3398636065978854e-09,1.211,692.0
+opportunity,1,0.4,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+1.2812072450516356e-08,2.562248012100175e-08,1.219,584.6
+opportunity,1,0.8,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+3.7413425075383125e-08,2.0093406921815818e-07,1.378,604.9
+opportunity,2,0.2,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+1.5709401966795171e-09,3.1407533179623723e-09,1.246,716.4
+opportunity,2,0.4,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+1.4003476502313093e-08,2.8005145607961324e-08,1.242,668.5
+opportunity,2,0.8,Warning: Could not load real Opportunity data, using synthetic: 'LowerArm'
+-3.2408105335809565e-08,2.145753530363694e-07,1.247,618.0
+pamap2,0,0.2,5.4963267454122404e-11,1.0912662523212397e-10,4.349,157.3
+pamap2,0,0.4,6.213647602781251e-11,1.2365837928591727e-10,3.932,157.4
+pamap2,0,0.8,1.28417850516334e-10,2.565810810726744e-10,3.665,158.0
+pamap2,1,0.2,1.3572802403553413e-11,2.587938658013852e-11,3.516,159.2
+pamap2,1,0.4,2.385027874757445e-11,4.66373243604257e-11,3.682,157.6
+pamap2,1,0.8,6.105573884580574e-11,1.2145883094376285e-10,3.702,158.8
+pamap2,2,0.2,1.3926824635078926e-11,2.7103838773957613e-11,3.698,158.7
+pamap2,2,0.4,3.784112225940783e-11,7.516345711343508e-11,3.754,157.2
+pamap2,2,0.8,1.6471180395455788e-10,3.2935329787606093e-10,3.864,158.5
