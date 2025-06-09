@@ -10,6 +10,7 @@ Metrics compared:
 - Error between NDG and KDE (KL divergence and Chi-squared)
 - Computation time
 - Memory usage
+- Statistical significance using Wilcoxon signed-rank test
 
 Datasets:
 - Synthetic data (various signal types)
@@ -27,6 +28,7 @@ import seaborn as sns
 from sklearn.model_selection import KFold
 from typing import Tuple, List, Dict, Any, Union
 import warnings
+from scipy import stats
 
 from thesis.fuzzy.membership import compute_membership_functions
 from thesis.data.datasets import create_opportunity_dataset, create_pamap2_dataset
@@ -353,7 +355,7 @@ def run_single_experiment(dataset: str, sensor_loc: str,
     # Run NDG and measure performance
     ndg_result, ndg_time, ndg_memory = measure_execution(
         lambda x_values, sensor_data, sigma_value: compute_membership_functions(
-            sensor_data, x_values, method="nd", sigma=sigma_value, normalization="integral"
+            sensor_data, x_values, method="nd", sigma=sigma_value, normalization="integral", use_optimized=False
         )[0],
         x, data, sigma_val
     )
@@ -475,7 +477,7 @@ def run_experiments_by_length(datasets: List[Dict[str, str]],
                     # Run NDG and measure performance
                     ndg_result, ndg_time, ndg_memory = measure_execution(
                         lambda x_values, sensor_data, sigma_value: compute_membership_functions(
-                            sensor_data, x_values, method="nd", sigma=sigma_value, normalization="integral"
+                            sensor_data, x_values, method="nd", sigma=sigma_value, normalization="integral", use_optimized=False
                         )[0],
                         x, fold_data, sigma_val
                     )
@@ -743,6 +745,159 @@ def plot_sigma_experiment_results(results: pd.DataFrame) -> plt.Figure:
     return fig
 
 
+def perform_statistical_tests(results: pd.DataFrame) -> pd.DataFrame:
+    """
+    Perform Wilcoxon signed-rank test for paired comparisons between NDG and KDE.
+    
+    Args:
+        results: DataFrame with experiment results
+        
+    Returns:
+        DataFrame with statistical test results
+    """
+    statistical_results = []
+    
+    # Group by dataset and length for time comparison
+    for (dataset, length), group in results.groupby(['dataset', 'length']):
+        if len(group) < 2:
+            continue
+            
+        # Wilcoxon signed-rank test for execution times
+        ndg_times = group['ndg_time'].values
+        kde_times = group['kde_time'].values
+        
+        if len(ndg_times) >= 5:  # Need at least 5 samples for Wilcoxon test
+            statistic, p_value = stats.wilcoxon(ndg_times, kde_times, alternative='less')
+            
+            # Calculate effect size (r = Z / sqrt(N))
+            z_score = stats.norm.ppf(p_value / 2)
+            effect_size = abs(z_score) / np.sqrt(len(ndg_times))
+            
+            # Calculate speedup factor
+            speedup = np.median(kde_times) / np.median(ndg_times)
+            
+            statistical_results.append({
+                'dataset': dataset,
+                'length': length,
+                'metric': 'execution_time',
+                'n_samples': len(ndg_times),
+                'ndg_median': np.median(ndg_times),
+                'kde_median': np.median(kde_times),
+                'speedup_factor': speedup,
+                'wilcoxon_statistic': statistic,
+                'p_value': p_value,
+                'effect_size': effect_size,
+                'significant': p_value < 0.05
+            })
+            
+        # Wilcoxon signed-rank test for memory usage
+        ndg_memory = group['ndg_memory'].values
+        kde_memory = group['kde_memory'].values
+        
+        if len(ndg_memory) >= 5:
+            # Handle cases where memory differences might be zero
+            non_zero_diffs = ndg_memory - kde_memory
+            non_zero_diffs = non_zero_diffs[non_zero_diffs != 0]
+            
+            if len(non_zero_diffs) >= 3:
+                statistic, p_value = stats.wilcoxon(ndg_memory, kde_memory, alternative='less')
+                
+                # Calculate effect size
+                z_score = stats.norm.ppf(p_value / 2)
+                effect_size = abs(z_score) / np.sqrt(len(ndg_memory))
+                
+                # Calculate memory savings
+                memory_savings = 1 - (np.median(ndg_memory) / (np.median(kde_memory) + 1e-9))
+                
+                statistical_results.append({
+                    'dataset': dataset,
+                    'length': length,
+                    'metric': 'memory_usage',
+                    'n_samples': len(ndg_memory),
+                    'ndg_median': np.median(ndg_memory),
+                    'kde_median': np.median(kde_memory),
+                    'memory_savings': memory_savings,
+                    'wilcoxon_statistic': statistic,
+                    'p_value': p_value,
+                    'effect_size': effect_size,
+                    'significant': p_value < 0.05
+                })
+    
+    return pd.DataFrame(statistical_results)
+
+
+def plot_statistical_results(stats_df: pd.DataFrame) -> Tuple[plt.Figure, plt.Figure]:
+    """
+    Create plots for statistical significance results.
+    
+    Args:
+        stats_df: DataFrame with statistical test results
+        
+    Returns:
+        Tuple of figures (speedup plot, significance plot)
+    """
+    # Filter for execution time results
+    time_stats = stats_df[stats_df['metric'] == 'execution_time']
+    
+    # Create speedup factor plot
+    fig_speedup, ax_speedup = plt.subplots(figsize=(12, 8))
+    
+    # Prepare data for plotting
+    datasets = time_stats['dataset'].unique()
+    x_positions = np.arange(len(datasets))
+    bar_width = 0.15
+    
+    # Plot bars for each length
+    lengths = sorted(time_stats['length'].unique())
+    for i, length in enumerate(lengths):
+        length_data = time_stats[time_stats['length'] == length]
+        speedups = []
+        
+        for dataset in datasets:
+            dataset_row = length_data[length_data['dataset'] == dataset]
+            if not dataset_row.empty:
+                speedups.append(dataset_row['speedup_factor'].values[0])
+            else:
+                speedups.append(0)
+        
+        bars = ax_speedup.bar(x_positions + i * bar_width, speedups, 
+                              bar_width, label=f'{length} samples')
+        
+        # Add significance markers
+        for j, (speedup, dataset) in enumerate(zip(speedups, datasets)):
+            dataset_row = length_data[length_data['dataset'] == dataset]
+            if not dataset_row.empty and dataset_row['significant'].values[0]:
+                ax_speedup.text(x_positions[j] + i * bar_width, speedup + 0.1, 
+                               '*', ha='center', va='bottom', fontsize=16)
+    
+    ax_speedup.set_xlabel('Dataset')
+    ax_speedup.set_ylabel('Speedup Factor (KDE time / NDG time)')
+    ax_speedup.set_title('NDG vs KDE Performance: Speedup Factors\n(* indicates p < 0.05)')
+    ax_speedup.set_xticks(x_positions + bar_width * (len(lengths) - 1) / 2)
+    ax_speedup.set_xticklabels(datasets)
+    ax_speedup.legend()
+    ax_speedup.axhline(y=1, color='gray', linestyle='--', alpha=0.5)
+    ax_speedup.grid(True, alpha=0.3)
+    
+    # Create p-value heatmap
+    fig_pvalue, ax_pvalue = plt.subplots(figsize=(10, 8))
+    
+    # Prepare pivot table for heatmap
+    pivot_data = time_stats.pivot(index='dataset', columns='length', values='p_value')
+    
+    # Create heatmap
+    sns.heatmap(pivot_data, annot=True, fmt='.4f', cmap='RdYlGn_r', 
+                center=0.05, vmin=0, vmax=0.1, 
+                cbar_kws={'label': 'p-value'}, ax=ax_pvalue)
+    
+    ax_pvalue.set_title('Statistical Significance of NDG vs KDE Time Comparison\n(Wilcoxon signed-rank test)')
+    ax_pvalue.set_xlabel('Signal Length (samples)')
+    ax_pvalue.set_ylabel('Dataset')
+    
+    plt.tight_layout()
+    return fig_speedup, fig_pvalue
+
+
 # -----------------------------------------------------------------------------
 # Main Execution
 # -----------------------------------------------------------------------------
@@ -759,11 +914,11 @@ def main():
         {"name": "pamap2", "sensor_loc": "Hand"}
     ]
     
-    # Define lengths to test (logarithmic scale)
-    lengths = [10, 30, 100, 300, 1000, 3000, 10000]
+    # Define lengths to test as required by RQ1
+    lengths = [100, 1000, 10000, 100000]  # 100, 1K, 10K, 100K samples
     
-    # Define sigma values to test (both absolute and relative)
-    sigmas = [0.1, 0.2, 0.3, 0.4, 0.5, 'r0.1', 'r0.2', 'r0.3']
+    # Define sigma values to test (focusing on key values for statistical testing)
+    sigmas = [0.1, 0.3, 0.5, 'r0.1', 'r0.3']
     
     # Run experiments across different lengths and sigmas
     print("Running experiments across different data lengths and sigma values...")
@@ -796,8 +951,35 @@ def main():
     csv_data = length_results.drop(columns=['figure'])
     csv_data.to_csv("results/ndg_vs_kde/experiment_results.csv", index=False)
     
-    print("Experiment completed successfully!")
-    return length_results
+    # Perform statistical tests
+    print("Performing statistical tests...")
+    stats_df = perform_statistical_tests(length_results)
+    
+    # Plot statistical results
+    print("Creating statistical results plots...")
+    fig_speedup, fig_pvalue = plot_statistical_results(stats_df)
+    
+    # Save statistical results plots
+    fig_speedup.savefig("results/ndg_vs_kde/speedup_comparison.png", dpi=300, bbox_inches="tight")
+    fig_pvalue.savefig("results/ndg_vs_kde/pvalue_heatmap.png", dpi=300, bbox_inches="tight")
+    
+    # Save statistical results to CSV
+    stats_df.to_csv("results/ndg_vs_kde/statistical_test_results.csv", index=False)
+    
+    # Print summary of statistical results
+    print("\n=== Statistical Test Summary ===")
+    print(f"Total comparisons: {len(stats_df)}")
+    significant_results = stats_df[stats_df['significant']]
+    print(f"Significant results (p < 0.05): {len(significant_results)}")
+    
+    # Print execution time results
+    time_results = stats_df[stats_df['metric'] == 'execution_time']
+    print("\nExecution Time Results:")
+    for _, row in time_results.iterrows():
+        print(f"  {row['dataset']} (n={row['length']}): speedup={row['speedup_factor']:.2f}x, p={row['p_value']:.4f}")
+    
+    print("\nExperiment completed successfully!")
+    return length_results, stats_df
 
 
 # -----------------------------------------------------------------------------
