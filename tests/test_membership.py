@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from thesis.fuzzy.membership import (
-    compute_ndg_dense,
+    compute_ndg,
     compute_ndg_streaming,
     compute_membership_function,
     compute_membership_function_kde,
@@ -80,13 +80,18 @@ class TestComputeNDG:
         assert abs(x_range[max_idx] - 5.0) < 0.2
 
 
-    def test_streaming_matches_dense(self):
+    def test_unified_matches_streaming(self):
+        """Test that unified interface produces equivalent results to streaming (when using same kernel)."""
         rng = np.random.default_rng(42)
         data = rng.normal(size=500)
         x = np.linspace(-3, 3, 500)
-        dense = compute_ndg_dense(x, data, 0.4)
+        
+        # Use unified interface with "none" optimization (should use streaming)
+        unified = compute_ndg(x, data, 0.4, optimization="none")
+        # Direct streaming call
         stream = compute_ndg_streaming(x, data, 0.4, chunk_size=100)
-        np.testing.assert_allclose(stream, dense, rtol=1e-3, atol=1e-6)
+        
+        np.testing.assert_allclose(unified, stream, rtol=1e-10, atol=1e-15)
 
     def test_three_peaks_default_sigma(self):
         x = np.arange(0, 10.1, 0.1)

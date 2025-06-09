@@ -1,0 +1,17 @@
+dataset,length,actual_size,speedup_factor,improvement_pct,p_value,significant,quality
+opportunity,100,100,3.73,272.8,0.0,True,Good
+opportunity,1000,1000,11.12,1012.1,0.0,True,Good
+opportunity,10000,10000,19.19,1818.7,0.0,True,Good
+opportunity,100000,40892,19.47,1846.9,0.0,True,Good
+pamap2,100,100,4.3,329.7,0.0,True,Good
+pamap2,1000,1000,11.86,1086.3,0.0,True,Good
+pamap2,10000,10000,19.53,1852.8,0.0,True,Good
+pamap2,100000,100000,20.48,1948.2,0.0,True,Good
+synthetic_bimodal,100,100,3.9,289.7,0.0,True,Good
+synthetic_bimodal,1000,1000,9.05,804.6,0.0006,True,Good
+synthetic_bimodal,10000,10000,15.79,1479.2,0.0,True,Good
+synthetic_bimodal,100000,100000,15.41,1441.3,0.0,True,Good
+synthetic_normal,100,100,3.57,257.2,0.0,True,Good
+synthetic_normal,1000,1000,9.48,848.1,0.0,True,Good
+synthetic_normal,10000,10000,15.47,1446.7,0.0,True,Good
+synthetic_normal,100000,100000,17.33,1632.8,0.0,True,Good
