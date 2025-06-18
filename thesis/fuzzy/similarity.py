@@ -361,6 +361,312 @@ def similarity_matlab_metric2(
     return safe_divide(weighted_sum, (len(mu_s1) - 1) * delta)
 
 
+# -----------------------------------------------------------------------------
+# 7. Information-theoretic metrics
+# -----------------------------------------------------------------------------
+
+
+def similarity_jensen_shannon(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Jensen-Shannon divergence-based similarity for fuzzy sets.
+    
+    JS(P||Q) = 0.5 * KL(P||M) + 0.5 * KL(Q||M)
+    where M = 0.5 * (P + Q)
+    
+    Similarity = 1 - sqrt(JS(P||Q))
+    """
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    
+    # Normalize to probability distributions
+    p = mu1 / (np.sum(mu1) + 1e-12)
+    q = mu2 / (np.sum(mu2) + 1e-12)
+    
+    # Add small epsilon to avoid log(0)
+    p = p + 1e-12
+    q = q + 1e-12
+    
+    # Mixed distribution M = 0.5 * (P + Q)
+    m = 0.5 * (p + q)
+    
+    # KL divergences
+    kl_pm = np.sum(p * np.log(p / m))
+    kl_qm = np.sum(q * np.log(q / m))
+    
+    # Jensen-Shannon divergence
+    js_div = 0.5 * kl_pm + 0.5 * kl_qm
+    
+    # Convert to similarity [0,1]
+    return 1.0 - np.sqrt(js_div)
+
+
+def similarity_mutual_information(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Mutual information based similarity using histogram estimation."""
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    if len(mu1) != len(mu2) or len(mu1) == 0:
+        return 0.0
+    
+    # Determine number of bins based on data size
+    n_bins = min(10, max(3, len(mu1) // 4))
+    
+    try:
+        # Create joint histogram
+        hist_2d, x_edges, y_edges = np.histogram2d(mu1, mu2, bins=n_bins)
+        
+        # Normalize to probabilities
+        pxy = hist_2d / np.sum(hist_2d)
+        px = np.sum(pxy, axis=1)
+        py = np.sum(pxy, axis=0)
+        
+        # Compute mutual information
+        mi = 0.0
+        for i in range(len(px)):
+            for j in range(len(py)):
+                if pxy[i,j] > 1e-12 and px[i] > 1e-12 and py[j] > 1e-12:
+                    mi += pxy[i,j] * np.log(pxy[i,j] / (px[i] * py[j]))
+        
+        # Normalize by joint entropy
+        h_xy = -np.sum(pxy[pxy > 1e-12] * np.log(pxy[pxy > 1e-12]))
+        return mi / h_xy if h_xy > 1e-12 else 0.0
+        
+    except (ValueError, ZeroDivisionError):
+        return 0.0
+
+
+def similarity_renyi_divergence(mu1: ArrayLike, mu2: ArrayLike, alpha: float = 2.0) -> float:
+    """Rényi divergence based similarity (α-divergence).
+    
+    Args:
+        alpha: Order of the Rényi divergence (default 2.0)
+               alpha=1.0 gives KL divergence
+    """
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    
+    # Normalize to probabilities
+    p = mu1 / (np.sum(mu1) + 1e-12) + 1e-12
+    q = mu2 / (np.sum(mu2) + 1e-12) + 1e-12
+    
+    try:
+        if abs(alpha - 1.0) < 1e-6:
+            # KL divergence case
+            kl = np.sum(p * np.log(p / q))
+            return np.exp(-kl)
+        else:
+            # General Rényi divergence
+            if alpha > 0:
+                renyi = (1.0 / (alpha - 1.0)) * np.log(np.sum(p**alpha * q**(1-alpha)))
+                return np.exp(-np.abs(renyi))
+            else:
+                return 0.0
+    except (ValueError, OverflowError, ZeroDivisionError):
+        return 0.0
+
+
+# -----------------------------------------------------------------------------
+# 8. β-similarity metrics
+# -----------------------------------------------------------------------------
+
+
+def similarity_beta(mu1: ArrayLike, mu2: ArrayLike, beta: float = 1.0) -> float:
+    """β-similarity metric for fuzzy sets.
+    
+    β-similarity generalizes several similarity measures:
+    - β = 1: Jaccard index
+    - β = 0.5: Dice coefficient
+    - β → 0: Overlap coefficient
+    
+    S_β(A,B) = |A ∩ B| / (|A ∩ B| + β|A \\ B| + (1-β)|B \\ A|)
+    """
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    
+    intersection = fuzzy_intersection(mu1, mu2)
+    card_intersection = fuzzy_cardinality(intersection)
+    
+    # Set differences: A \ B = A - (A ∩ B), B \ A = B - (A ∩ B)
+    diff_1 = mu1 - intersection  # A \ B
+    diff_2 = mu2 - intersection  # B \ A
+    
+    card_diff_1 = fuzzy_cardinality(np.maximum(diff_1, 0))
+    card_diff_2 = fuzzy_cardinality(np.maximum(diff_2, 0))
+    
+    # β-similarity formula
+    denominator = card_intersection + beta * card_diff_1 + (1 - beta) * card_diff_2
+    
+    return safe_divide(card_intersection, denominator, default=1.0)
+
+
+# -----------------------------------------------------------------------------
+# 9. Distribution-based metrics
+# -----------------------------------------------------------------------------
+
+
+def similarity_bhattacharyya_coefficient(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Bhattacharyya coefficient - measures overlap between distributions."""
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    
+    # Normalize to probability distributions
+    mu1_norm = mu1 / (np.sum(mu1) + 1e-12)
+    mu2_norm = mu2 / (np.sum(mu2) + 1e-12)
+    
+    # Bhattacharyya coefficient
+    return float(np.sum(np.sqrt(mu1_norm * mu2_norm)))
+
+
+def similarity_bhattacharyya_distance(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Bhattacharyya distance = -ln(Bhattacharyya coefficient).
+    
+    Converted to similarity: 1 / (1 + distance)
+    """
+    coeff = similarity_bhattacharyya_coefficient(mu1, mu2)
+    if coeff <= 1e-12:
+        return 0.0
+    
+    distance = -np.log(coeff)
+    return 1.0 / (1.0 + distance)
+
+
+def similarity_hellinger(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Hellinger distance - bounded and symmetric measure.
+    
+    Returns similarity version: 1 - Hellinger_distance
+    """
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    
+    # Normalize to probability distributions
+    mu1_norm = mu1 / (np.sum(mu1) + 1e-12)
+    mu2_norm = mu2 / (np.sum(mu2) + 1e-12)
+    
+    # Hellinger distance computation
+    sqrt_diff = np.sqrt(mu1_norm) - np.sqrt(mu2_norm)
+    hellinger_dist = (1.0/np.sqrt(2.0)) * np.sqrt(np.sum(sqrt_diff**2))
+    
+    # Convert to similarity [0,1]
+    return 1.0 - hellinger_dist
+
+
+def similarity_earth_movers_distance(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Earth Mover's Distance (1-Wasserstein) approximation.
+    
+    Approximated as L1 distance between CDFs.
+    """
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    if len(mu1) == 0 or len(mu2) == 0:
+        return 0.0
+    
+    # Ensure same length for CDF comparison
+    if len(mu1) != len(mu2):
+        min_len = min(len(mu1), len(mu2))
+        mu1 = mu1[:min_len]
+        mu2 = mu2[:min_len]
+    
+    # Compute CDFs
+    sum1, sum2 = np.sum(mu1), np.sum(mu2)
+    if sum1 <= 1e-12 or sum2 <= 1e-12:
+        return 0.0
+        
+    cdf1 = np.cumsum(mu1) / sum1
+    cdf2 = np.cumsum(mu2) / sum2
+    
+    # EMD as L1 distance between CDFs
+    emd = np.sum(np.abs(cdf1 - cdf2))
+    return 1.0 / (1.0 + emd)  # Convert to similarity
+
+
+def similarity_energy_distance(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Energy distance based similarity."""
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    n, m = len(mu1), len(mu2)
+    
+    if n == 0 or m == 0:
+        return 0.0
+    
+    try:
+        # Energy distance computation
+        # E[|X-Y|] term - cross-distances
+        cross_sum = sum(abs(float(x) - float(y)) for x in mu1 for y in mu2)
+        cross_term = cross_sum / (n * m)
+        
+        # E[|X-X'|] term - within-group distances
+        if n > 1:
+            within_1_sum = sum(abs(float(mu1[i]) - float(mu1[j])) 
+                             for i in range(n) for j in range(n) if i != j)
+            within_1 = within_1_sum / (n * (n - 1))
+        else:
+            within_1 = 0.0
+        
+        # E[|Y-Y'|] term - within-group distances  
+        if m > 1:
+            within_2_sum = sum(abs(float(mu2[i]) - float(mu2[j])) 
+                             for i in range(m) for j in range(m) if i != j)
+            within_2 = within_2_sum / (m * (m - 1))
+        else:
+            within_2 = 0.0
+        
+        # Energy distance
+        energy_dist = 2 * cross_term - within_1 - within_2
+        return 1.0 / (1.0 + abs(energy_dist))  # Convert to similarity
+        
+    except (ValueError, OverflowError):
+        return 0.0
+
+
+def similarity_harmonic_mean(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Harmonic mean based similarity measure."""
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    
+    if len(mu1) != len(mu2):
+        min_len = min(len(mu1), len(mu2))
+        mu1 = mu1[:min_len]
+        mu2 = mu2[:min_len]
+    
+    if len(mu1) == 0:
+        return 0.0
+    
+    # Element-wise harmonic mean where both values are positive
+    harmonic_means = []
+    for i in range(len(mu1)):
+        if mu1[i] > 1e-12 and mu2[i] > 1e-12:
+            harmonic_means.append(2 * mu1[i] * mu2[i] / (mu1[i] + mu2[i]))
+        else:
+            harmonic_means.append(0.0)
+    
+    # Overall similarity as mean of harmonic means
+    return float(np.mean(harmonic_means))
+
+
+# -----------------------------------------------------------------------------
+# 10. Signal processing metrics
+# -----------------------------------------------------------------------------
+
+
+def similarity_cross_correlation(mu1: ArrayLike, mu2: ArrayLike) -> float:
+    """Normalized cross-correlation similarity."""
+    mu1, mu2 = map(np.asarray, (mu1, mu2))
+    if len(mu1) == 0 or len(mu2) == 0:
+        return 0.0
+    
+    # Ensure same length
+    if len(mu1) != len(mu2):
+        min_len = min(len(mu1), len(mu2))
+        mu1 = mu1[:min_len]
+        mu2 = mu2[:min_len]
+    
+    # Zero-mean normalization
+    mu1_mean, mu2_mean = np.mean(mu1), np.mean(mu2)
+    mu1_norm = mu1 - mu1_mean
+    mu2_norm = mu2 - mu2_mean
+    
+    # Auto-correlation normalization factors
+    norm1 = np.sum(mu1_norm**2)
+    norm2 = np.sum(mu2_norm**2)
+    norm_factor = np.sqrt(norm1 * norm2)
+    
+    if norm_factor < 1e-12:
+        return 1.0 if np.allclose(mu1, mu2) else 0.0
+    
+    # Cross-correlation (zero-lag)
+    cross_corr = np.sum(mu1_norm * mu2_norm)
+    return float(cross_corr / norm_factor)
+
+
 def calculate_all_similarity_metrics(
     mu_s1: ArrayLike,
     mu_s2: ArrayLike,
@@ -417,12 +723,29 @@ def calculate_all_similarity_metrics(
         "Distance_Hamming": distance_hamming,
         "Distance_Euclidean": distance_euclidean,
         "Distance_Chebyshev": distance_chebyshev,
-        "MeanOneMinusAbsDiff": mean_one_minus_abs_diff,
+        # Note: MeanOneMinusAbsDiff removed (identical to Similarity_Hamming)
         "OneMinusAbsDiffOverSumCardinality": one_minus_abs_diff_over_sum_cardinality,
         # Correlation‑based
         "Cosine": similarity_cosine,
         "Pearson": similarity_pearson,
         "ProductOverMinNormSquared": product_over_min_norm_squared,
+        "CrossCorrelation": similarity_cross_correlation,
+        # Information-theoretic
+        "JensenShannon": similarity_jensen_shannon,
+        "MutualInformation": similarity_mutual_information,
+        # Note: RenyiDivergence removed (identical to RenyiDivergence_2.0 with default alpha=2.0)
+        "RenyiDivergence_0.5": lambda mu1, mu2: similarity_renyi_divergence(mu1, mu2, 0.5),
+        "RenyiDivergence_2.0": lambda mu1, mu2: similarity_renyi_divergence(mu1, mu2, 2.0),
+        # β-similarity variants (unique cases only)
+        "Beta_0.1": lambda mu1, mu2: similarity_beta(mu1, mu2, 0.1),
+        "Beta_2.0": lambda mu1, mu2: similarity_beta(mu1, mu2, 2.0),
+        # Distribution-based
+        "BhattacharyyaCoefficient": similarity_bhattacharyya_coefficient,
+        "BhattacharyyaDistance": similarity_bhattacharyya_distance,
+        "HellingerDistance": similarity_hellinger,
+        "EarthMoversDistance": similarity_earth_movers_distance,
+        "EnergyDistance": similarity_energy_distance,
+        "HarmonicMean": similarity_harmonic_mean,
         # Others
         "MaxIntersection": max_intersection,
     }
@@ -450,27 +773,43 @@ def calculate_all_similarity_metrics(
 
     # Preferred presentation order -------------------------------------------
     preferred_order = [
-        # Generic
+        # Core similarity metrics
         "Jaccard",
-        "Dice",
+        "Dice", 
         "OverlapCoefficient",
         "Cosine",
         "Pearson",
+        "CrossCorrelation",
+        # Distance-based similarities
         "Similarity_Hamming",
         "Similarity_Euclidean",
         "Similarity_Chebyshev",
         "Distance_Hamming",
-        "Distance_Euclidean",
+        "Distance_Euclidean", 
         "Distance_Chebyshev",
+        # Information-theoretic
+        "JensenShannon",
+        "MutualInformation",
+        "RenyiDivergence_0.5",
+        "RenyiDivergence_2.0",
+        # β-similarity variants (unique cases only)
+        "Beta_0.1",
+        "Beta_2.0",
+        # Distribution-based
+        "BhattacharyyaCoefficient",
+        "BhattacharyyaDistance",
+        "HellingerDistance",
+        "EarthMoversDistance",
+        "EnergyDistance",
+        "HarmonicMean",
         # Custom metrics
         "CustomMetric1_SumMembershipOverIQRDelta",
         "CustomMetric2_DerivativeWeightedSimilarity",
-        # Renamed MATLAB metrics
+        # Advanced set-theoretic
         "MeanMinOverMax",
         "MeanDiceCoefficient",
         "MaxIntersection",
         "ProductOverMinNormSquared",
-        "MeanOneMinusAbsDiff",
         "OneMinusAbsDiffOverSumCardinality",
         "IntersectionOverMaxCardinality",
         "JaccardNegation",
