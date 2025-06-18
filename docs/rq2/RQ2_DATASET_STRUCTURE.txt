@@ -1,0 +1,73 @@
+RQ2 DATASET STRUCTURE AND TRANSFORMATIONS
+=====================================
+
++------------------------+     +------------------------+     +------------------------+
+|    RAW SENSOR DATA     |     |     WINDOWED DATA      |     |   WINDOW MAGNITUDE    |
+|------------------------|     |------------------------|     |------------------------|
+| Opportunity:           |     | Window Size: 128/256   |     | Euclidean Norm        |
+| 51,116 samples × 18 ch |---->| Overlap: 50%/70%       |---->| across all sensors    |
+|                        |     | Shape: W × win_size × m|     | Shape: W × win_size   |
+| PAMAP2:                |     |                        |     |                        |
+| 376,416 samples × 18 ch|     | W = 16-300 windows     |     |                        |
++------------------------+     +------------------------+     +------------------------+
+                                                                          |
+                                                                          v
++------------------------+     +------------------------+     +------------------------+
+| CLASSIFICATION RESULTS |     |  SIMILARITY MATRICES   |     | MEMBERSHIP FUNCTIONS  |
+|------------------------|     |------------------------|     |------------------------|
+| 38 metrics × metrics   |     | 38 metrics             |     | NDG with Epanechnikov |
+| (F1, accuracy, etc.)   |<----| Shape: W × W matrices  |<----| Shape: W × 100 points |
+|                        |     | (one per metric)       |     |                        |
+|                        |     |                        |     |                        |
+|                        |     |                        |     |                        |
++------------------------+     +------------------------+     +------------------------+
+
+OPPORTUNITY DATASET DETAILS
+===========================
+
+Sensor Types (2):
+- IMU
+- Accelerometer
+
+Body Parts (3):
+- RightLowerArm
+- LeftLowerArm
+- Back
+
+Axes (3):
+- X, Y, Z
+
+Label Types:
+- ML_Both_Arms: 2,142 samples, 7 activities
+  (Open Door 1/2, Close Door 1/2, Open/Close Fridge, Toggle Switch)
+- Locomotion: 37,507 samples, 4 activities
+  (Stand, Walk, Sit, Lie)
+- HL_Activity: Various high-level activities
+- LL_Left_Arm: Low-level left arm activities
+- LL_Right_Arm: Low-level right arm activities
+
+PAMAP2 DATASET DETAILS
+======================
+
+Sensor Types (2):
+- Accelerometer
+- Gyroscope
+
+Body Parts (3):
+- Hand
+- Chest
+- Ankle
+
+Axes (3):
+- X, Y, Z
+
+Activities (7):
+- walking
+- running
+- cycling
+- sitting
+- standing
+- ascending_stairs
+- descending_stairs
+
+Filtered Data: 143,079 samples (38.0% of total) 
