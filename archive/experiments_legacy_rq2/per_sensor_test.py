@@ -1,9 +1,13 @@
 """
-Per-Sensor Quick Test
+Per-Sensor Membership Function Test
 
-A simplified test script to quickly evaluate the per-sensor membership function approach
-using a very small subset of the Opportunity dataset.
+This script tests the per-sensor membership function approach on a small subset
+of the Opportunity dataset to evaluate its performance compared to the
+traditional approach of using a single membership function for all sensors.
 """
+
+import pytest
+pytest.skip("Legacy comparison script using removed APIs", allow_module_level=True)
 
 import numpy as np
 import pandas as pd
@@ -43,20 +47,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-def run_quick_test(
+def run_comparison_test(
     output_dir: Path,
-    n_samples_per_class: int = 20,
-    window_size: int = 16,
+    n_samples: int = 500,
+    window_size: int = 64,
     overlap_ratio: float = 0.5,
-    n_jobs: int = 1
+    n_jobs: int = 4
 ):
     """
-    Run a quick test of the per-sensor approach with a very small dataset.
+    Run a comparison test between per-sensor and traditional approaches.
     
     Args:
         output_dir: Directory to save results
-        n_samples_per_class: Number of samples per activity class
+        n_samples: Number of samples to use
         window_size: Window size
         overlap_ratio: Window overlap ratio
         n_jobs: Number of parallel jobs
@@ -77,7 +80,7 @@ def run_quick_test(
         logger.error("Could not find Locomotion labels")
         return
     
-    # Filter to keep only Stand and Sit (for simplicity)
+    # Filter to keep only Stand, Walk, Sit (exclude Unknown and Lie for simplicity)
     target_activities = ["Stand", "Walk", "Sit"]
     
     # Convert labels to strings to ensure they are hashable
@@ -94,25 +97,28 @@ def run_quick_test(
     labels = labels[activity_mask]
     
     # Subsample to make it faster
-    # Use stratified sampling to maintain class distribution
-    unique_labels = np.unique(labels)
-    indices = []
-    
-    for label in unique_labels:
-        label_indices = np.where(labels == label)[0]
+    if n_samples < len(data):
+        # Use stratified sampling to maintain class distribution
+        unique_labels = np.unique(labels)
+        indices = []
         
-        # Random sample from this class
-        if len(label_indices) > n_samples_per_class:
-            sampled_indices = np.random.choice(
-                label_indices, size=n_samples_per_class, replace=False
-            )
-            indices.extend(sampled_indices)
-        else:
-            indices.extend(label_indices)
-    
-    # Use the sampled indices
-    data = data[indices]
-    labels = labels[indices]
+        for label in unique_labels:
+            label_indices = np.where(labels == label)[0]
+            n_label_samples = int(n_samples * len(label_indices) / len(labels))
+            
+            # Ensure at least 10 samples per class
+            n_label_samples = max(n_label_samples, 10)
+            
+            # Random sample from this class
+            if len(label_indices) > n_label_samples:
+                sampled_indices = np.random.choice(
+                    label_indices, size=n_label_samples, replace=False
+                )
+                indices.extend(sampled_indices)
+        
+        # Use the sampled indices
+        data = data[indices]
+        labels = labels[indices]
     
     # Convert labels to integers for classification
     unique_labels = np.unique(labels)
@@ -127,12 +133,12 @@ def run_quick_test(
         count = np.sum(encoded_labels == idx)
         logger.info(f"  - {label}: {count} samples")
     
-    # Create windows with small window size for quick test
+    # Create windows
     window_config = WindowConfig(
         window_size=window_size,
         overlap_ratio=overlap_ratio,
         label_strategy="majority_vote",
-        min_samples_per_class=2
+        min_samples_per_class=5
     )
     
     windowed_data = create_sliding_windows(
@@ -144,7 +150,7 @@ def run_quick_test(
     # Filter windows based on class count
     windowed_data = filter_windowed_data_by_class_count(
         windowed_data=windowed_data,
-        min_samples_per_class=2
+        min_samples_per_class=5
     )
     
     # Log windowing stats
@@ -155,7 +161,6 @@ def run_quick_test(
     balance_ratio = min_count / max_count if max_count > 0 else 0
     
     logger.info(f"Windows: {windowed_data.n_windows}, Classes: {n_classes}")
-    logger.info(f"Class distribution: {class_counts}")
     logger.info(f"Balance ratio: {balance_ratio:.3f}")
     
     # Check if we have enough classes for classification
@@ -176,8 +181,7 @@ def run_quick_test(
         x_vals, mu_vals = compute_window_ndg_membership(
             window_data,
             kernel_type="gaussian",
-            sigma_method="adaptive",
-            use_per_sensor=False
+            sigma_method="adaptive"  # Use adaptive sigma method instead of "std"
         )
         membership_functions.append(mu_vals)
         x_values_list.append(x_vals)
@@ -212,7 +216,7 @@ def run_quick_test(
         windows=windowed_data.windows,
         metric="jaccard",
         kernel_type="gaussian",
-        sigma_method="adaptive",
+        sigma_method="std",
         n_jobs=n_jobs
     )
     
@@ -267,7 +271,7 @@ def run_quick_test(
         }
     }
     
-    with open(output_dir / "quick_test_results.pkl", "wb") as f:
+    with open(output_dir / "comparison_results.pkl", "wb") as f:
         pickle.dump(results, f)
     
     # Create confusion matrices
@@ -359,7 +363,7 @@ def create_similarity_heatmaps(
     # Difference matrix
     plt.figure(figsize=(10, 8))
     diff_matrix = per_sensor_sim - traditional_sim
-    sns.heatmap(diff_matrix, cmap='coolwarm', center=0, vmin=-0.5, vmax=0.5)
+    sns.heatmap(diff_matrix, cmap='coolwarm', center=0, vmin=-1, vmax=1)
     plt.title('Difference Matrix (Per-Sensor - Traditional)')
     plt.tight_layout()
     plt.savefig(output_dir / "difference_matrix.png", dpi=300, bbox_inches='tight')
@@ -368,25 +372,25 @@ def create_similarity_heatmaps(
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Quick test of per-sensor membership function approach")
-    parser.add_argument("--output_dir", type=str, default="results/per_sensor_quick_test",
+    parser = argparse.ArgumentParser(description="Test per-sensor membership function approach")
+    parser.add_argument("--output_dir", type=str, default="results/per_sensor_test",
                        help="Directory to save results")
-    parser.add_argument("--n_samples_per_class", type=int, default=20,
-                       help="Number of samples per activity class")
-    parser.add_argument("--window_size", type=int, default=16,
+    parser.add_argument("--n_samples", type=int, default=500,
+                       help="Number of samples to use")
+    parser.add_argument("--window_size", type=int, default=64,
                        help="Window size")
     parser.add_argument("--overlap_ratio", type=float, default=0.5,
                        help="Window overlap ratio")
-    parser.add_argument("--n_jobs", type=int, default=1,
+    parser.add_argument("--n_jobs", type=int, default=4,
                        help="Number of parallel jobs")
     
     args = parser.parse_args()
     
     output_dir = Path(args.output_dir)
     
-    run_quick_test(
+    run_comparison_test(
         output_dir=output_dir,
-        n_samples_per_class=args.n_samples_per_class,
+        n_samples=args.n_samples,
         window_size=args.window_size,
         overlap_ratio=args.overlap_ratio,
         n_jobs=args.n_jobs

@@ -7,7 +7,7 @@ from sensor data using neighbor density method with optimized implementations.
 
 from __future__ import annotations
 
-from typing import Tuple, Union, Optional, Final
+from typing import Tuple, Union, Optional, Final, List
 from numpy.typing import ArrayLike, NDArray
 import numpy as np
 import math
@@ -649,8 +649,8 @@ def compute_membership_function(
     if sigma_val < 1e-9:
         sigma_val = 1e-9
 
-    # Compute NDG
-    ndg_s = compute_ndg_spatial_optimized(x_values, sensor_data, sigma)
+    # Compute NDG using the resolved numeric sigma value
+    ndg_s = compute_ndg_spatial_optimized(x_values, sensor_data, sigma_val)
     
     # Normalize based on selected method
     if normalization == "sum":
@@ -963,3 +963,89 @@ def compute_membership_functions(
         raise ValueError("Unknown method for membership function. Use 'nd' or 'kde'.")
         
     return mu, sigma_val 
+
+def compute_ndg_window(
+    window_data: np.ndarray,
+    n_grid_points: int = 100,
+    *,
+    kernel_type: str = "gaussian",
+    sigma_method: str = "adaptive",
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute a *single* NDG membership function from a window of sensor data.
+
+    This is the canonical helper that replaces numerous ad-hoc variants that
+    existed in older experiment scripts (e.g. *compute_window_ndg_membership*).
+
+    For multi-channel windows the *magnitude* across all sensors is used so the
+    output is comparable to the traditional (sensor-agnostic) approach.
+    """
+    # Flatten multi-sensor window by magnitude
+    if window_data.ndim == 2 and window_data.shape[1] > 1:
+        sensor_data = np.linalg.norm(window_data, axis=1)
+    else:
+        sensor_data = window_data.flatten()
+
+    if sensor_data.size == 0:
+        raise ValueError("window_data is empty – cannot compute membership")
+
+    data_min, data_max = float(np.min(sensor_data)), float(np.max(sensor_data))
+    data_range = data_max - data_min
+
+    # Constant signal → uniform membership
+    if data_range < 1e-12:
+        x_values = np.linspace(data_min - 0.1, data_max + 0.1, n_grid_points)
+        mu_values = np.ones_like(x_values, dtype=np.float64)
+        return x_values, mu_values
+
+    # Slightly expand domain to avoid edge effects
+    margin = 0.1 * data_range
+    x_values = np.linspace(data_min - margin, data_max + margin, n_grid_points)
+
+    sigma = 0.1 * data_range if sigma_method == "adaptive" else float(sigma_method)
+
+    mu_values = compute_ndg(x_values=x_values, sensor_data=sensor_data, sigma=sigma, kernel_type=kernel_type)
+    return x_values, mu_values
+
+
+def compute_ndg_window_per_sensor(
+    window_data: np.ndarray,
+    n_grid_points: int = 100,
+    *,
+    kernel_type: str = "gaussian",
+    sigma_method: str = "adaptive",
+) -> Tuple[np.ndarray, List[np.ndarray]]:
+    """Compute **one** membership function per sensor (column).
+
+    This consolidates the logic previously found in *compute_per_sensor_membership_optimized*
+    inside *thesis/exp/rq2_experiment.py* so that experiment scripts can import
+    it directly from the library layer.
+    """
+    if window_data.ndim != 2:
+        raise ValueError("window_data must be 2-D (window_size, n_sensors)")
+
+    # Common domain across all sensors
+    data_min = float(np.nanmin(window_data))
+    data_max = float(np.nanmax(window_data))
+    x_values = np.linspace(data_min, data_max, n_grid_points)
+
+    membership_functions: List[np.ndarray] = []
+
+    # Pre-compute sigma if adaptive (use global range)
+    global_range = data_max - data_min
+    sigma_global = 0.1 * global_range if sigma_method == "adaptive" else float(sigma_method)
+
+    for sensor_idx in range(window_data.shape[1]):
+        sensor_series = window_data[:, sensor_idx]
+
+        if np.all(np.isnan(sensor_series)) or np.all(sensor_series == 0):
+            membership_functions.append(np.zeros_like(x_values))
+            continue
+
+        try:
+            mu_vals = compute_ndg(x_values=x_values, sensor_data=sensor_series, sigma=sigma_global, kernel_type=kernel_type)
+        except Exception as exc:  # pragma: no cover – safety net
+            warnings.warn(f"NDG computation failed for sensor {sensor_idx}: {exc}; using zeros")
+            mu_vals = np.zeros_like(x_values)
+        membership_functions.append(mu_vals)
+
+    return x_values, membership_functions 

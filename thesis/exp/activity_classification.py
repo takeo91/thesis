@@ -17,7 +17,7 @@ import pandas as pd
 from typing import Dict, List, Tuple, Optional, Any, Union
 from pathlib import Path
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections import defaultdict
 from sklearn.metrics import f1_score, balanced_accuracy_score, classification_report
 from sklearn.model_selection import LeaveOneOut
@@ -27,6 +27,14 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import itertools
 import os
 import multiprocessing
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Import thesis modules
 import sys
@@ -34,37 +42,54 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from thesis.data import (
     WindowConfig, WindowedData, create_sliding_windows,
-    filter_windowed_data_by_class_count, get_windowing_summary
+    filter_windowed_data_by_class_count, get_windowing_summary, balance_windows_by_class
 )
-from thesis.fuzzy.membership import compute_ndg
+# NDG membership helpers are imported lazily in the wrapper below
 from thesis.fuzzy.similarity import calculate_all_similarity_metrics
-from thesis.fuzzy.per_sensor_membership import (
-    compute_ndg_per_sensor,
-    compute_pairwise_similarities_per_sensor
-)
+# Per-sensor logic moved to rq2_experiment.py
+from thesis.core.config import BaseConfig, WindowingMixin, NDGMixin
+
+
+def compute_window_ndg_membership(
+    window_data: np.ndarray,
+    n_grid_points: int = 100,
+    kernel_type: str = "epanechnikov",
+    sigma_method: str = "adaptive",
+    use_per_sensor: bool = False,  # retained for backward compatibility; ignored
+):
+    """Deprecated wrapper kept for backward compatibility.
+
+    All logic now lives in ``thesis.fuzzy.membership.compute_ndg_window``.
+    The *use_per_sensor* flag is ignored – per-sensor calculations should call
+    ``compute_ndg_window_per_sensor`` directly.
+    """
+    from thesis.fuzzy.membership import compute_ndg_window
+
+    return compute_ndg_window(
+        window_data,
+        n_grid_points=n_grid_points,
+        kernel_type=kernel_type,
+        sigma_method=sigma_method,
+    )
 
 
 @dataclass
-class ClassificationConfig:
-    """Configuration for activity classification experiment."""
-    window_sizes: List[int] = None
-    overlap_ratios: List[float] = None
-    min_samples_per_class: int = 10
+class ClassificationConfig(BaseConfig, WindowingMixin, NDGMixin):
+    """Configuration for activity-classification experiments."""
+
     similarity_normalization: bool = True
-    ndg_kernel_type: str = "epanechnikov"  # Optimized kernel
-    ndg_sigma_method: str = "adaptive"  # "adaptive" or fixed value
-    n_jobs: int = -1  # Parallel processing (-1 = all cores)
-    chunk_size: int = 1000  # Number of pairs per chunk for parallel processing
-    use_per_sensor: bool = True  # Use per-sensor approach by default
-    
-    def __post_init__(self):
-        if self.window_sizes is None:
-            self.window_sizes = [128, 256]
-        if self.overlap_ratios is None:
-            self.overlap_ratios = [0.5, 0.7]
-        # Convert n_jobs to actual number of cores
-        if self.n_jobs <= 0:
-            self.n_jobs = max(1, multiprocessing.cpu_count() + self.n_jobs + 1)
+    chunk_size: int = 1000  # pairs per parallel batch
+
+    # Approach toggles --------------------------------------------------------
+    use_per_sensor: bool = True
+    use_all_metrics: bool = False
+
+    # Override some defaults from mix-ins for this specific use-case ---------
+    window_sizes: List[int] = field(default_factory=lambda: [128, 256])
+    overlap_ratios: List[float] = field(default_factory=lambda: [0.5, 0.7])
+    min_samples_per_class: int = 10
+
+    ndg_kernel_type: str = "epanechnikov"  # faster than Gaussian for NDG
 
 
 @dataclass
@@ -77,78 +102,6 @@ class ClassificationResults:
     performance_metrics: Dict[str, Dict[str, float]]
     computation_time: Dict[str, float]
     metadata: Dict[str, Any]
-
-
-def compute_window_ndg_membership(
-    window_data: np.ndarray,
-    n_grid_points: int = 100,
-    kernel_type: str = "epanechnikov",
-    sigma_method: str = "adaptive",
-    use_per_sensor: bool = True
-) -> Tuple[np.ndarray, Union[np.ndarray, List[np.ndarray]]]:
-    """
-    Compute NDG membership function for a single window of sensor data.
-    
-    Args:
-        window_data: Window data, shape (window_size, n_features)
-        n_grid_points: Number of grid points for membership function
-        kernel_type: Kernel type for NDG computation
-        sigma_method: Method for sigma calculation
-        use_per_sensor: If True, use per-sensor approach (one membership function per sensor)
-    
-    Returns:
-        Tuple of (x_values, membership_values)
-        For per-sensor approach, membership_values is a list of arrays (one per sensor)
-        For traditional approach, membership_values is a single array
-    """
-    # Use per-sensor approach if specified
-    if use_per_sensor and window_data.ndim == 2 and window_data.shape[1] > 1:
-        return compute_ndg_per_sensor(
-            window_data=window_data,
-            kernel_type=kernel_type,
-            sigma_method=sigma_method,
-            n_points=n_grid_points
-        )
-    
-    # Traditional approach (flatten multi-feature windows)
-    if window_data.ndim == 2 and window_data.shape[1] > 1:
-        # Use magnitude for multi-feature data
-        sensor_data = np.linalg.norm(window_data, axis=1)
-    else:
-        sensor_data = window_data.flatten()
-    
-    # Define domain
-    data_min, data_max = np.min(sensor_data), np.max(sensor_data)
-    data_range = data_max - data_min
-    
-    if data_range < 1e-12:  # Constant signal
-        x_values = np.linspace(data_min - 0.1, data_max + 0.1, n_grid_points)
-        mu_values = np.ones(n_grid_points)  # Uniform membership
-        return x_values, mu_values
-    
-    # Expand domain slightly
-    margin = 0.1 * data_range
-    x_values = np.linspace(data_min - margin, data_max + margin, n_grid_points)
-    
-    # Calculate sigma
-    if sigma_method == "adaptive":
-        sigma = 0.1 * data_range
-    else:
-        sigma = float(sigma_method)
-    
-    # Compute NDG membership function (optimized)
-    try:
-        mu_values = compute_ndg(
-            x_values=x_values,
-            sensor_data=sensor_data,
-            sigma=sigma,
-            kernel_type=kernel_type
-        )
-    except Exception as e:
-        warnings.warn(f"NDG computation failed: {e}, using uniform distribution")
-        mu_values = np.ones(n_grid_points) / n_grid_points
-    
-    return x_values, mu_values
 
 
 def compute_similarity_for_pair(args):
@@ -167,21 +120,11 @@ def compute_similarity_for_pair(args):
         i, j, mu_i, mu_j, x_values_common, normalize = args
         use_per_sensor = False
     
-    # For per-sensor approach, mu_i and mu_j are lists of arrays
-    if use_per_sensor and isinstance(mu_i, list) and isinstance(mu_j, list):
-        from thesis.fuzzy.per_sensor_membership import compute_similarity_per_sensor
-        
-        # Calculate similarity for all metrics
-        similarities = {}
-        for metric in ["jaccard", "dice", "cosine", "euclidean", "pearson"]:
-            similarities[metric] = compute_similarity_per_sensor(
-                mu_i, mu_j, x_values_common, metric=metric
-            )
-    else:
-        # Traditional approach
-        similarities = calculate_all_similarity_metrics(
-            mu_i, mu_j, x_values_common, normalise=normalize
-        )
+    # Only traditional approach supported here
+    # Per-sensor logic is now handled directly in rq2_experiment.py
+    similarities = calculate_all_similarity_metrics(
+        mu_i, mu_j, x_values_common, normalise=normalize
+    )
     
     return i, j, similarities
 
@@ -203,26 +146,8 @@ def compute_pairwise_similarities(
     """
     n_windows = windowed_data.n_windows
     
-    # If using per-sensor approach, delegate to the dedicated function
-    if config.use_per_sensor:
-        logger.info(f"🔄 Using per-sensor approach for {n_windows} windows...")
-        
-        # Define metrics to compute
-        metrics = ["jaccard", "dice", "cosine", "euclidean", "pearson"]
-        similarity_matrices = {}
-        
-        for metric in metrics:
-            logger.info(f"📊 Computing similarity matrix for {metric} metric")
-            sim_matrix = compute_pairwise_similarities_per_sensor(
-                windows=windowed_data.windows,
-                metric=metric,
-                kernel_type=config.ndg_kernel_type,
-                sigma_method=config.ndg_sigma_method,
-                n_jobs=config.n_jobs
-            )
-            similarity_matrices[metric] = sim_matrix
-        
-        return similarity_matrices
+    # Per-sensor approach is now handled directly in rq2_experiment.py
+    # This function only handles traditional approach
     
     # Traditional approach (flattened windows)
     logger.info(f"🔄 Computing NDG membership functions for {n_windows} windows...")
@@ -405,6 +330,18 @@ def run_activity_classification_experiment(
                 windowed_data = filter_windowed_data_by_class_count(
                     windowed_data, config.min_samples_per_class
                 )
+                
+                # Optional class balancing -------------------------------------------------
+                if config.max_windows_per_class is not None:
+                    balance_start_time = time.time()
+                    before = windowed_data.n_windows
+                    windowed_data = balance_windows_by_class(
+                        windowed_data,
+                        max_windows_per_class=config.max_windows_per_class,
+                        random_state=42,
+                    )
+                    balance_time = time.time() - balance_start_time
+                    print(f"   ⚖️  Balanced windows: {before} -> {windowed_data.n_windows} ({balance_time:.2f}s)")
                 
                 summary = get_windowing_summary(windowed_data)
                 print(f"   📈 Windows: {summary['n_windows']}, Classes: {summary['n_classes']}")

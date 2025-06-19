@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Dict, Sequence, Union, Callable
+from typing import Dict, Sequence, Union, Callable, List, Tuple
 
 import numpy as np
+import os
 from scipy.interpolate import interp1d
 from scipy.stats import gaussian_kde  # Used only in similarity_matlab_metric1
 
@@ -821,3 +822,447 @@ def calculate_all_similarity_metrics(
     ]
 
     return {key: results[key] for key in preferred_order if key in results}
+
+
+def calculate_vectorizable_similarity_metrics(
+    mu_s1: ArrayLike,
+    mu_s2: ArrayLike,
+    x_values: ArrayLike,
+    *,
+    normalise: bool = False,
+) -> Dict[str, float]:
+    """
+    Compute only the similarity metrics that can be efficiently vectorized.
+    
+    This function includes metrics that can be computed using fast NumPy operations
+    without complex loops, iterative algorithms, or external dependencies.
+    
+    Args:
+        mu_s1 / mu_s2: membership vectors (same shape as *x_values*).
+        x_values: domain of the membership functions.
+        normalise: if *True* the MFs are rescaled to sum to one.
+        
+    Returns:
+        Dictionary of vectorizable similarity metrics and their values.
+    """
+    mu_s1 = np.asarray(mu_s1, dtype=float)
+    mu_s2 = np.asarray(mu_s2, dtype=float)
+    x_values = np.asarray(x_values, dtype=float)
+
+    if mu_s1.shape != mu_s2.shape or mu_s1.shape != x_values.shape:
+        raise ValueError("mu_s1, mu_s2 and x_values must share the same shape")
+    if not mu_s1.size:
+        return {}
+
+    if normalise:
+        mu_s1 = mu_s1 / max(np.sum(mu_s1), 1e-12)
+        mu_s2 = mu_s2 / max(np.sum(mu_s2), 1e-12)
+
+    # Fast vectorized implementations
+    results: Dict[str, float] = {}
+    
+    # Precompute common operations for efficiency
+    intersection = np.minimum(mu_s1, mu_s2)
+    union = np.maximum(mu_s1, mu_s2)
+    sum_intersection = np.sum(intersection)
+    sum_union = np.sum(union)
+    sum_mu1 = np.sum(mu_s1)
+    sum_mu2 = np.sum(mu_s2)
+    diff = mu_s1 - mu_s2
+    abs_diff = np.abs(diff)
+    
+    # 1. SET-THEORETIC / OVERLAP-BASED METRICS (Highly Vectorizable)
+    
+    # Jaccard similarity
+    results["Jaccard"] = sum_intersection / (sum_union + 1e-12) if sum_union > 1e-12 else 1.0
+    
+    # Dice coefficient
+    results["Dice"] = 2.0 * sum_intersection / (sum_mu1 + sum_mu2 + 1e-12)
+    
+    # Overlap coefficient
+    min_sum = min(sum_mu1, sum_mu2)
+    results["OverlapCoefficient"] = sum_intersection / (min_sum + 1e-12) if min_sum > 1e-12 else 1.0
+    
+    # Mean min over max (pointwise)
+    union_safe = np.where(union > 1e-12, union, 1.0)
+    results["MeanMinOverMax"] = float(np.mean(intersection / union_safe))
+    
+    # Mean dice coefficient (pointwise)
+    sum_pointwise = mu_s1 + mu_s2
+    sum_safe = np.where(sum_pointwise > 1e-12, sum_pointwise, 1.0)
+    results["MeanDiceCoefficient"] = float(np.mean(2.0 * intersection / sum_safe))
+    
+    # Max intersection
+    results["MaxIntersection"] = float(np.max(intersection)) if intersection.size > 0 else 0.0
+    
+    # Intersection over max cardinality
+    max_sum = max(sum_mu1, sum_mu2)
+    results["IntersectionOverMaxCardinality"] = sum_intersection / (max_sum + 1e-12) if max_sum > 1e-12 else 1.0
+    
+    # One minus mean symmetric difference
+    sym_diff = np.abs(mu_s1 - mu_s2)  # Symmetric difference for fuzzy sets
+    results["OneMinusMeanSymmetricDifference"] = 1.0 - float(np.mean(sym_diff))
+    
+    # 2. DISTANCE-BASED METRICS (Highly Vectorizable)
+    
+    # Hamming distance and similarity
+    hamming_dist = float(np.sum(abs_diff))
+    results["Distance_Hamming"] = hamming_dist
+    n = mu_s1.size
+    results["Similarity_Hamming"] = 1.0 - hamming_dist / n if n > 0 else 1.0
+    
+    # Euclidean distance and similarity
+    euclidean_dist = float(np.sqrt(np.sum(diff**2)))
+    results["Distance_Euclidean"] = euclidean_dist
+    results["Similarity_Euclidean"] = 1.0 / (1.0 + euclidean_dist + 1e-9)
+    
+    # Chebyshev distance and similarity
+    chebyshev_dist = float(np.max(abs_diff)) if abs_diff.size > 0 else 0.0
+    results["Distance_Chebyshev"] = chebyshev_dist
+    results["Similarity_Chebyshev"] = 1.0 - min(chebyshev_dist, 1.0)
+    
+    # One minus abs diff over sum cardinality
+    results["OneMinusAbsDiffOverSumCardinality"] = 1.0 - hamming_dist / (sum_mu1 + sum_mu2 + 1e-12)
+    
+    # 3. CORRELATION-BASED METRICS (Highly Vectorizable)
+    
+    # Cosine similarity
+    dot_product = float(np.dot(mu_s1, mu_s2))
+    norm1 = float(np.linalg.norm(mu_s1))
+    norm2 = float(np.linalg.norm(mu_s2))
+    if norm1 > 1e-12 and norm2 > 1e-12:
+        results["Cosine"] = dot_product / (norm1 * norm2)
+    else:
+        results["Cosine"] = 1.0 if np.allclose(mu_s1, mu_s2) else 0.0
+    
+    # Pearson correlation
+    if n > 1:
+        mean1, mean2 = np.mean(mu_s1), np.mean(mu_s2)
+        centered1 = mu_s1 - mean1
+        centered2 = mu_s2 - mean2
+        numerator = float(np.sum(centered1 * centered2))
+        denom1 = float(np.sum(centered1**2))
+        denom2 = float(np.sum(centered2**2))
+        if denom1 > 1e-12 and denom2 > 1e-12:
+            results["Pearson"] = numerator / np.sqrt(denom1 * denom2)
+        else:
+            results["Pearson"] = 1.0 if np.allclose(mu_s1, mu_s2) else 0.0
+    else:
+        results["Pearson"] = 1.0 if np.allclose(mu_s1, mu_s2) else 0.0
+    
+    # Product over min norm squared
+    norm1_sq = float(np.dot(mu_s1, mu_s1))
+    norm2_sq = float(np.dot(mu_s2, mu_s2))
+    min_norm_sq = min(norm1_sq, norm2_sq)
+    if min_norm_sq > 1e-12:
+        results["ProductOverMinNormSquared"] = dot_product / min_norm_sq
+    else:
+        results["ProductOverMinNormSquared"] = 1.0 if np.allclose(mu_s1, 0) and np.allclose(mu_s2, 0) else 0.0
+    
+    # Cross-correlation (normalized)
+    if n > 0:
+        mean1, mean2 = np.mean(mu_s1), np.mean(mu_s2)
+        centered1 = mu_s1 - mean1
+        centered2 = mu_s2 - mean2
+        cross_corr = float(np.sum(centered1 * centered2))
+        norm1 = float(np.sum(centered1**2))
+        norm2 = float(np.sum(centered2**2))
+        norm_factor = np.sqrt(norm1 * norm2)
+        if norm_factor > 1e-12:
+            results["CrossCorrelation"] = cross_corr / norm_factor
+        else:
+            results["CrossCorrelation"] = 1.0 if np.allclose(mu_s1, mu_s2) else 0.0
+    else:
+        results["CrossCorrelation"] = 1.0
+    
+    # 4. DISTRIBUTION-BASED METRICS (Moderately Vectorizable)
+    
+    # Bhattacharyya coefficient
+    sqrt_product = np.sqrt(mu_s1 * mu_s2)
+    results["BhattacharyyaCoefficient"] = float(np.sum(sqrt_product))
+    
+    # Bhattacharyya distance
+    bc = results["BhattacharyyaCoefficient"]
+    results["BhattacharyyaDistance"] = -np.log(max(bc, 1e-12))
+    
+    # Hellinger distance
+    sqrt_mu1 = np.sqrt(mu_s1)
+    sqrt_mu2 = np.sqrt(mu_s2)
+    hellinger_sum = float(np.sum((sqrt_mu1 - sqrt_mu2)**2))
+    results["HellingerDistance"] = np.sqrt(0.5 * hellinger_sum)
+    
+    # 5. NEGATION-BASED METRICS (Vectorizable with precomputed negations)
+    
+    # Negations
+    neg_mu1 = 1.0 - mu_s1
+    neg_mu2 = 1.0 - mu_s2
+    neg_intersection = np.minimum(neg_mu1, neg_mu2)
+    neg_union = np.maximum(neg_mu1, neg_mu2)
+    
+    # Jaccard negation
+    sum_neg_intersection = np.sum(neg_intersection)
+    sum_neg_union = np.sum(neg_union)
+    results["JaccardNegation"] = sum_neg_intersection / (sum_neg_union + 1e-12) if sum_neg_union > 1e-12 else 1.0
+    
+    # Negated overlap coefficient
+    min_neg_sum = min(np.sum(neg_mu1), np.sum(neg_mu2))
+    results["NegatedOverlapCoefficient"] = sum_neg_intersection / (min_neg_sum + 1e-12) if min_neg_sum > 1e-12 else 1.0
+    
+    # Negated intersection over max cardinality
+    max_neg_sum = max(np.sum(neg_mu1), np.sum(neg_mu2))
+    results["NegatedIntersectionOverMaxCardinality"] = sum_neg_intersection / (max_neg_sum + 1e-12) if max_neg_sum > 1e-12 else 1.0
+    
+    return results
+
+
+def get_vectorizable_metrics_list() -> List[str]:
+    """
+    Get the list of similarity metrics that can be efficiently vectorized.
+    
+    Returns:
+        List of metric names that are supported by calculate_vectorizable_similarity_metrics.
+    """
+    return [
+        # Set-theoretic / overlap-based (9 metrics)
+        "Jaccard",
+        "Dice", 
+        "OverlapCoefficient",
+        "MeanMinOverMax",
+        "MeanDiceCoefficient",
+        "MaxIntersection",
+        "IntersectionOverMaxCardinality",
+        "OneMinusMeanSymmetricDifference",
+        
+        # Distance-based (6 metrics)
+        "Distance_Hamming",
+        "Similarity_Hamming",
+        "Distance_Euclidean",
+        "Similarity_Euclidean",
+        "Distance_Chebyshev",
+        "Similarity_Chebyshev",
+        "OneMinusAbsDiffOverSumCardinality",
+        
+        # Correlation-based (4 metrics)
+        "Cosine",
+        "Pearson",
+        "ProductOverMinNormSquared",
+        "CrossCorrelation",
+        
+        # Distribution-based (3 metrics)
+        "BhattacharyyaCoefficient",
+        "BhattacharyyaDistance",
+        "HellingerDistance",
+        
+        # Negation-based (3 metrics)
+        "JaccardNegation",
+        "NegatedOverlapCoefficient",
+        "NegatedIntersectionOverMaxCardinality",
+    ]
+
+
+def get_non_vectorizable_metrics_list() -> List[str]:
+    """
+    Get the list of similarity metrics that cannot be easily vectorized.
+    
+    These metrics require iterative algorithms, complex computations, or external dependencies
+    that make vectorization difficult or inefficient.
+    
+    Returns:
+        List of metric names that require individual computation.
+    """
+    return [
+        # Information-theoretic (complex probability computations)
+        "JensenShannon",
+        "MutualInformation", 
+        "RenyiDivergence_0.5",
+        "RenyiDivergence_2.0",
+        
+        # β-similarity variants (complex iterative computations)
+        "Beta_0.1",
+        "Beta_2.0",
+        
+        # Complex distribution-based metrics
+        "EarthMoversDistance",  # Requires optimization algorithms
+        "EnergyDistance",       # Complex double summation
+        "HarmonicMean",         # Conditional logic per element
+        
+        # Complex negation-based metrics
+        "NegatedSymDiffOverMaxNegatedComponent",  # Multiple nested operations
+        "NegatedSymDiffOverMinNegatedComponent",  # Multiple nested operations
+        
+        # Custom metrics (require additional data or complex logic)
+        "CustomMetric1_SumMembershipOverIQRDelta",  # Requires raw data
+        "CustomMetric2_DerivativeWeightedSimilarity",  # Requires derivatives
+    ]
+
+# -----------------------------------------------------------------------------
+# 8. Per-sensor similarity helpers (moved from thesis.exp.rq2_experiment)
+# -----------------------------------------------------------------------------
+
+import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from itertools import combinations
+
+logger = logging.getLogger(__name__)
+
+
+def _fast_pair_similarity(
+    mu_i: List[np.ndarray],
+    mu_j: List[np.ndarray],
+    x_values: np.ndarray,
+    metric: str,
+    normalise: bool = True,
+):
+    """Internal helper that chooses the fastest available implementation."""
+    metric_lower = metric.lower()
+    vectorizable = metric.title() in get_vectorizable_metrics_list() or metric_lower in get_vectorizable_metrics_list()
+
+    if vectorizable:
+        return compute_per_sensor_similarity_ultra_optimized(
+            mu_i, mu_j, x_values, metric=metric, normalise=normalise
+        )
+    else:
+        return compute_per_sensor_similarity_optimized(
+            mu_i, mu_j, x_values, metric=metric, normalise=normalise
+        )
+
+
+def compute_per_sensor_similarity_vectorized(
+    memberships_batch: List[Tuple[List[np.ndarray], List[np.ndarray]]],
+    x_values: np.ndarray,
+    metric: str = "jaccard",
+    normalise: bool = True,
+) -> List[float]:
+    """Vectorized computation of per-sensor similarities for *many* pairs.
+
+    This mirrors the earlier implementation that lived in *rq2_experiment.py* but
+    is library-level so it can be reused by multiple experiments.
+    """
+    if not memberships_batch:
+        return []
+
+    n_sensors = len(memberships_batch[0][0])
+    batch_size = len(memberships_batch)
+    similarities_batch: List[List[float]] = [[] for _ in range(batch_size)]
+
+    for sensor_idx in range(n_sensors):
+        for pair_idx, (mu_i_list, mu_j_list) in enumerate(memberships_batch):
+            mu_i, mu_j = mu_i_list[sensor_idx], mu_j_list[sensor_idx]
+
+            if metric.lower() == "jaccard":
+                intersection = np.minimum(mu_i, mu_j)
+                union = np.maximum(mu_i, mu_j)
+                sim = np.sum(intersection) / (np.sum(union) + 1e-12)
+            elif metric.lower() == "dice":
+                intersection = np.minimum(mu_i, mu_j)
+                sim = 2 * np.sum(intersection) / (np.sum(mu_i) + np.sum(mu_j) + 1e-12)
+            elif metric.lower() == "cosine":
+                dot_product = float(np.dot(mu_i, mu_j))
+                sim = dot_product / (np.linalg.norm(mu_i) * np.linalg.norm(mu_j) + 1e-12)
+            else:
+                sim_dict = calculate_all_similarity_metrics(mu_i, mu_j, x_values, normalise=normalise)
+                key = metric.title() if metric.title() in sim_dict else metric
+                sim = sim_dict.get(key, 0.0)
+
+            similarities_batch[pair_idx].append(sim)
+
+    # Aggregate sensors (mean)
+    return [float(np.mean(sims)) for sims in similarities_batch]
+
+
+def compute_per_sensor_similarity_ultra_optimized(
+    mu_i: List[np.ndarray],
+    mu_j: List[np.ndarray],
+    x_values: np.ndarray,
+    metric: str = "jaccard",
+    normalise: bool = True,
+) -> float:
+    if len(mu_i) != len(mu_j):
+        raise ValueError("mu_i and mu_j must contain same number of sensors")
+
+    similarities = [
+        calculate_vectorizable_similarity_metrics(mu_i[s], mu_j[s], x_values, normalise=normalise)
+        .get(metric.title() if metric.title() in get_vectorizable_metrics_list() else metric, 0.0)
+        for s in range(len(mu_i))
+    ]
+    return float(np.mean(similarities))
+
+
+def compute_per_sensor_similarity_optimized(
+    mu_i: List[np.ndarray],
+    mu_j: List[np.ndarray],
+    x_values: np.ndarray,
+    metric: str = "jaccard",
+    normalise: bool = True,
+) -> float:
+    if len(mu_i) != len(mu_j):
+        raise ValueError("mu_i and mu_j must contain same number of sensors")
+
+    sims = [
+        calculate_all_similarity_metrics(mu_i[s], mu_j[s], x_values, normalise=normalise)[metric.title() if metric.title() in metric else metric]
+        if metric.title() in get_vectorizable_metrics_list() else calculate_all_similarity_metrics(mu_i[s], mu_j[s], x_values, normalise=normalise).get(metric, 0.0)
+        for s in range(len(mu_i))
+    ]
+    return float(np.mean(sims))
+
+
+def compute_per_sensor_pairwise_similarities(
+    windows: List[np.ndarray],
+    metrics: List[str],
+    *,
+    kernel_type: str = "gaussian",
+    sigma_method: str = "adaptive",
+    normalise: bool = True,
+    n_jobs: int = -1,
+) -> Dict[str, np.ndarray]:
+    """Compute a similarity matrix for *each* metric given window data.
+
+    The heavy NDG membership generation uses the optimised library helpers.
+    """
+    from thesis.fuzzy.membership import compute_ndg_window_per_sensor
+
+    n_windows = len(windows)
+    if n_windows < 2:
+        raise ValueError("Need at least 2 windows to build similarity matrix")
+
+    # Pre-compute membership functions
+    logger.info(f"🔄 Computing per-sensor membership functions for {n_windows} windows…")
+    memberships: List[List[np.ndarray]] = []
+    x_values_common: np.ndarray | None = None
+
+    for w in windows:
+        x_vals, mu_list = compute_ndg_window_per_sensor(
+            w,
+            n_grid_points=100,
+            kernel_type=kernel_type,
+            sigma_method=sigma_method,
+        )
+        memberships.append(mu_list)
+        x_values_common = x_vals if x_values_common is None else x_values_common
+
+    # Prepare similarity matrices
+    sims: Dict[str, np.ndarray] = {m: np.zeros((n_windows, n_windows)) for m in metrics}
+    for m in metrics:
+        np.fill_diagonal(sims[m], 1.0)
+
+    # Generate all unordered pairs
+    pairs = list(combinations(range(n_windows), 2))
+
+    def _process_pair(pair):
+        i, j = pair
+        mu_i, mu_j = memberships[i], memberships[j]
+        results = {}
+        for m in metrics:
+            results[m] = _fast_pair_similarity(mu_i, mu_j, x_values_common, m, normalise)
+        return i, j, results
+
+    # Parallel processing
+    max_workers = max(1, n_jobs if n_jobs > 0 else (os.cpu_count() or 1))
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_process_pair, p): p for p in pairs}
+        for fut in as_completed(futures):
+            i, j, res = fut.result()
+            for m, val in res.items():
+                sims[m][i, j] = sims[m][j, i] = val
+
+    return sims
