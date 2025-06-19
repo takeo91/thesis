@@ -65,6 +65,8 @@ from thesis.fuzzy.membership import (
     compute_membership_function,
     compute_membership_function_kde,
     compute_membership_functions,
+    compute_ndg_window,
+    compute_ndg_window_per_sensor,
 )
 
 from thesis.fuzzy.distributions import (
@@ -129,4 +131,5 @@ __all__ = [
     "compute_error_metrics", "compute_kl_divergence", "compute_chi_squared_test",
     "compute_information_criteria", "time_series_cross_validation",
     "normalize_data", "standardize_data", "compute_fitness_metrics",
+    "compute_ndg_window", "compute_ndg_window_per_sensor",
 ] 

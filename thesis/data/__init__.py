@@ -26,6 +26,7 @@ from .windowing import (
     windowed_data_to_dataframe,
     get_windowing_summary,
     demo_windowing,
+    balance_windows_by_class,
 )
 
 __all__ = [
@@ -44,4 +45,5 @@ __all__ = [
     "windowed_data_to_dataframe",
     "get_windowing_summary",
     "demo_windowing",
+    "balance_windows_by_class",
 ]
