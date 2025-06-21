@@ -1036,6 +1036,10 @@ def main():
                        help="Number of top functions to show in profile")
     parser.add_argument("--max_windows_per_class", type=int, default=None,
                        help="Maximum windows to retain per class after windowing")
+    parser.add_argument("--library_per_class", type=int, default=None,
+                       help="Number of windows per class to include in the retrieval *library* split (overrides --max_windows_per_class during splitting)")
+    parser.add_argument("--topk", type=int, default=5,
+                       help="k value for hit@k retrieval metric calculations")
     
     args = parser.parse_args()
     

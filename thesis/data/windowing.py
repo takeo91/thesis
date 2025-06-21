@@ -447,5 +447,76 @@ def balance_windows_by_class(
     )
 
 
+def train_test_split_windows(
+    windowed_data: WindowedData,
+    *,
+    library_per_class: int | None = None,
+    test_fraction: float = 0.3,
+    stratified: bool = True,
+    random_state: int | None = None,
+) -> Tuple[WindowedData, WindowedData]:
+    """Split *windowed_data* into a reference **library** and **query** set.
+
+    Parameters
+    ----------
+    windowed_data : WindowedData
+        Full, balanced dataset.
+    library_per_class : int, optional
+        If given, **exactly** this many windows are sampled per class for the
+        library (without replacement).  Remaining windows form the query set.
+        Overrides *test_fraction*.
+    test_fraction : float, default 0.3
+        Fraction of windows to allocate to the *query* split (ignored if
+        *library_per_class* is supplied). Must be in (0, 1).
+    stratified : bool, default True
+        If True the split is applied independently per class to preserve the
+        class distribution.
+    random_state : int, optional
+        Seed for RNG.
+
+    Returns
+    -------
+    library, query : Tuple[WindowedData, WindowedData]
+    """
+    rng = np.random.default_rng(random_state)
+
+    labels = windowed_data.labels
+    unique_labels = np.unique(labels)
+
+    lib_indices: list[int] = []
+    qry_indices: list[int] = []
+
+    for lbl in unique_labels:
+        class_idx = np.where(labels == lbl)[0]
+        if library_per_class is not None:
+            n_lib = min(library_per_class, len(class_idx))
+        else:
+            n_lib = int(round(len(class_idx) * (1 - test_fraction)))
+            n_lib = max(1, n_lib)
+        selected = rng.choice(class_idx, size=n_lib, replace=False)
+        lib_indices.extend(selected)
+        if stratified:
+            qry_indices.extend([i for i in class_idx if i not in selected])
+
+    if not stratified:
+        # Non-stratified simple split after gathering all indices
+        all_indices = np.arange(len(labels))
+        remaining = np.setdiff1d(all_indices, lib_indices, assume_unique=True)
+        qry_indices.extend(remaining)
+
+    lib_indices = np.array(sorted(lib_indices))
+    qry_indices = np.array(sorted(qry_indices))
+
+    def _subset(idx: np.ndarray) -> WindowedData:
+        return WindowedData(
+            windows=windowed_data.windows[idx],
+            labels=windowed_data.labels[idx],
+            window_indices=windowed_data.window_indices[idx],
+            metadata={**windowed_data.metadata, "subset_size": int(len(idx))},
+        )
+
+    return _subset(lib_indices), _subset(qry_indices)
+
+
 if __name__ == "__main__":
     demo_windowing() 

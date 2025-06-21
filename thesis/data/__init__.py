@@ -27,6 +27,7 @@ from .windowing import (
     get_windowing_summary,
     demo_windowing,
     balance_windows_by_class,
+    train_test_split_windows,
 )
 
 __all__ = [
@@ -46,4 +47,5 @@ __all__ = [
     "get_windowing_summary",
     "demo_windowing",
     "balance_windows_by_class",
+    "train_test_split_windows",
 ]

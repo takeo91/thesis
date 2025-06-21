@@ -1207,62 +1207,124 @@ def compute_per_sensor_similarity_optimized(
 
 
 def compute_per_sensor_pairwise_similarities(
-    windows: List[np.ndarray],
+    windows_query: List[np.ndarray],
     metrics: List[str],
     *,
+    windows_library: List[np.ndarray] | None = None,
     kernel_type: str = "gaussian",
     sigma_method: str = "adaptive",
     normalise: bool = True,
     n_jobs: int = -1,
 ) -> Dict[str, np.ndarray]:
-    """Compute a similarity matrix for *each* metric given window data.
+    """Compute per-sensor similarity matrices.
 
-    The heavy NDG membership generation uses the optimised library helpers.
+    Parameters
+    ----------
+    windows_query : List[np.ndarray]
+        Sequence of *query* windows.  If *windows_library* is ``None`` they are
+        treated as the full dataset and a **symmetric** *N×N* matrix is
+        produced.  Otherwise an **asymmetric** *Q×L* matrix is returned where
+        *Q* = len(windows_query) and *L* = len(windows_library).
+    metrics : List[str]
+        Similarity metrics to compute (case-insensitive, see
+        ``get_vectorizable_metrics_list``).
+    windows_library : List[np.ndarray], optional
+        Reference/library windows.  When provided, similarities are computed
+        between every (query, library) pair.  If omitted, a conventional
+        pairwise matrix among *windows_query* is built.
+    kernel_type, sigma_method, normalise, n_jobs
+        Passed through to NDG and similarity helpers.
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Mapping *metric → similarity matrix* where the shape is *(Q, L)* in
+        asymmetric mode or *(N, N)* in symmetric mode.
     """
     from thesis.fuzzy.membership import compute_ndg_window_per_sensor
 
-    n_windows = len(windows)
-    if n_windows < 2:
-        raise ValueError("Need at least 2 windows to build similarity matrix")
+    # Determine mode
+    asymmetric = windows_library is not None
 
-    # Pre-compute membership functions
-    logger.info(f"🔄 Computing per-sensor membership functions for {n_windows} windows…")
-    memberships: List[List[np.ndarray]] = []
-    x_values_common: np.ndarray | None = None
+    windows_library = windows_query if windows_library is None else windows_library
 
-    for w in windows:
-        x_vals, mu_list = compute_ndg_window_per_sensor(
-            w,
-            n_grid_points=100,
-            kernel_type=kernel_type,
-            sigma_method=sigma_method,
-        )
-        memberships.append(mu_list)
-        x_values_common = x_vals if x_values_common is None else x_values_common
+    n_query = len(windows_query)
+    n_library = len(windows_library)
+
+    if n_query == 0 or n_library == 0:
+        raise ValueError("Both query and library sets must contain at least one window")
+
+    # Pre-compute membership functions (avoid duplication when symmetric)
+    logger.info(
+        f"🔄 Computing per-sensor membership functions for {n_query} query and {n_library} library windows…"
+    )
+
+    def _compute_memberships(ws: List[np.ndarray]) -> Tuple[List[List[np.ndarray]], np.ndarray]:
+        memberships: List[List[np.ndarray]] = []
+        x_values_common: np.ndarray | None = None
+        for w in ws:
+            x_vals, mu_list = compute_ndg_window_per_sensor(
+                w,
+                n_grid_points=100,
+                kernel_type=kernel_type,
+                sigma_method=sigma_method,
+            )
+            memberships.append(mu_list)
+            x_values_common = x_vals if x_values_common is None else x_values_common
+        return memberships, x_values_common  # type: ignore[return-value]
+
+    memberships_query, x_values_q = _compute_memberships(windows_query)
+    if asymmetric:
+        memberships_library, _ = _compute_memberships(windows_library)
+        x_values_common = x_values_q  # assume they share same support as long as sampling identical
+    else:
+        memberships_library = memberships_query
+        x_values_common = x_values_q
 
     # Prepare similarity matrices
-    sims: Dict[str, np.ndarray] = {m: np.zeros((n_windows, n_windows)) for m in metrics}
-    for m in metrics:
-        np.fill_diagonal(sims[m], 1.0)
+    sims: Dict[str, np.ndarray] = {
+        m: np.zeros((n_query, n_library)) for m in metrics
+    }
 
-    # Generate all unordered pairs
-    pairs = list(combinations(range(n_windows), 2))
+    # Build work list
+    if asymmetric:
+        pairs = [(i, j) for i in range(n_query) for j in range(n_library)]
+    else:
+        pairs = list(combinations(range(n_query), 2))
 
     def _process_pair(pair):
         i, j = pair
-        mu_i, mu_j = memberships[i], memberships[j]
+        mu_i = memberships_query[i]
+        mu_j = memberships_library[j]
         results = {}
         for m in metrics:
             results[m] = _fast_pair_similarity(mu_i, mu_j, x_values_common, m, normalise)
         return i, j, results
 
-    # Parallel processing
     max_workers = max(1, n_jobs if n_jobs > 0 else (os.cpu_count() or 1))
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(_process_pair, p): p for p in pairs}
-        for fut in as_completed(futures):
-            i, j, res = fut.result()
+
+    if max_workers == 1:
+        # Sequential fallback avoids multiprocessing pickling overhead (and
+        # works inside interactive interpreters / notebooks).
+        for pair in pairs:
+            i, j, res = _process_pair(pair)
             for m, val in res.items():
-                sims[m][i, j] = sims[m][j, i] = val
+                sims[m][i, j] = val
+                if not asymmetric and i != j:
+                    sims[m][j, i] = val
+    else:
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(_process_pair, p): p for p in pairs}
+            for fut in as_completed(futures):
+                i, j, res = fut.result()
+                for m, val in res.items():
+                    sims[m][i, j] = val
+                    if not asymmetric and i != j:
+                        sims[m][j, i] = val  # fill symmetric counterpart
+
+    # Fill diagonal with 1.0 in symmetric mode
+    if not asymmetric:
+        for m in metrics:
+            np.fill_diagonal(sims[m], 1.0)
 
     return sims
