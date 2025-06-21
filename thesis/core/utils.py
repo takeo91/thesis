@@ -6,7 +6,7 @@ including sensor metadata and label mapping functions.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 import re
 
 
@@ -162,3 +162,41 @@ def extract_metadata(column_name: str, label_columns: List[str]) -> Dict[str, Op
         metadata["unit"] = unit_match.group(1)
 
     return metadata 
+
+# -----------------------------------------------------------------------------
+# Sampling-rate helpers
+# -----------------------------------------------------------------------------
+
+def get_dataset_specific_window_sizes(
+    dataset: str,
+    durations_sec: Sequence[float] | None = (4.0, 6.0),
+    *,
+    custom_rates: dict[str, int] | None = None,
+) -> List[int]:
+    """Convert *durations_sec* into sample counts for the given *dataset*.
+
+    Parameters
+    ----------
+    dataset : str
+        Dataset identifier (case-insensitive). Supported defaults: "opportunity"
+        (30 Hz) and "pamap2" (100 Hz). Pass ``custom_rates`` to support others.
+    durations_sec : Sequence[float], default (4, 6)
+        Window durations **in seconds**.
+    custom_rates : dict[str, int], optional
+        Mapping *dataset → sampling rate* that overrides defaults.
+
+    Returns
+    -------
+    List[int]
+        Sample counts corresponding to each duration.
+    """
+    dataset_lower = dataset.lower()
+    default_rates = {"opportunity": 30, "pamap2": 100}
+    if custom_rates:
+        default_rates.update({k.lower(): v for k, v in custom_rates.items()})
+
+    if dataset_lower not in default_rates:
+        raise ValueError(f"Unknown dataset '{dataset}'. Provide rate via custom_rates.")
+
+    rate = default_rates[dataset_lower]
+    return [int(round(rate * d)) for d in durations_sec] 
