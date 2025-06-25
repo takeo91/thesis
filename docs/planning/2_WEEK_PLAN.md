@@ -28,9 +28,10 @@
 3. Bootstrap CIs, store in `results/rq3_robustness/`.
 
 ### Day 5 – Global synthesis
-1. Combine RQ1 efficiency, RQ2 discriminative power, RQ3 robustness.
-2. Identify "best overall" metric-kernel combo.
-3. Draft summary tables and key figures.
+1. **RQ1 is now fully finished.**
+2. Combine RQ1 efficiency, RQ2 discriminative power, RQ3 robustness.
+3. Identify "best overall" metric-kernel combo.
+4. Draft summary tables and key figures.
 
 ### Day 6 – Documentation & reproducibility pass
 1. Update `docs/` with final methodology, config examples, and CLI instructions.
@@ -45,6 +46,7 @@
 
 ---
 ## Deliverables after 7 days
+* **RQ1: FINISHED.** All results and documentation available in `results/ndg_vs_kde/rq1_markdown_results/`.
 * Retrieval-based RQ2 implementation with balanced windows.
 * Cross-dataset robustness results (RQ3).
 * Full statistical analysis notebooks & scripts.

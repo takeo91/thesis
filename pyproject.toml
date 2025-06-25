@@ -18,6 +18,7 @@ dependencies = [
     "scipy",
     "pytest-cov>=6.1.1",
     "seaborn>=0.13.2",
+    "numba>=0.60.0",
 ]
 
 [project.optional-dependencies]
