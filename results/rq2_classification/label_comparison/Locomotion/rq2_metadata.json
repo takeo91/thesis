@@ -1,0 +1,72 @@
+{
+  "experiment_id": "rq2_20250614_182512",
+  "config": {
+    "datasets": [
+      "opportunity"
+    ],
+    "window_sizes": [
+      128
+    ],
+    "overlap_ratios": [
+      0.5
+    ],
+    "target_activities": {
+      "opportunity": [
+        "Stand",
+        "Walk",
+        "Sit",
+        "Lie"
+      ],
+      "pamap2": [
+        "walking",
+        "running",
+        "cycling",
+        "sitting",
+        "standing",
+        "ascending_stairs",
+        "descending_stairs"
+      ]
+    },
+    "min_samples_per_activity": 100,
+    "sensor_selection": {
+      "opportunity": {
+        "sensor_types": [
+          "IMU",
+          "Accelerometer"
+        ],
+        "body_parts": [
+          "RightLowerArm",
+          "LeftLowerArm",
+          "Back"
+        ],
+        "axes": [
+          "X",
+          "Y",
+          "Z"
+        ]
+      },
+      "pamap2": {
+        "sensor_locations": [
+          "hand",
+          "chest",
+          "ankle"
+        ],
+        "sensor_types": [
+          "accelerometer",
+          "gyroscope"
+        ],
+        "axes": [
+          "x",
+          "y",
+          "z"
+        ]
+      }
+    },
+    "quick_test": true,
+    "output_dir": "results/rq2_classification/label_comparison/Locomotion",
+    "opportunity_label_type": "Locomotion"
+  },
+  "start_time": "2025-06-14T18:25:12.035313",
+  "end_time": "2025-06-14T18:25:22.468391",
+  "total_duration_seconds": 10.433032989501953
+}

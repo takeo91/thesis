@@ -1,0 +1,74 @@
+{
+  "experiment_id": "rq2_20250614_181516",
+  "config": {
+    "datasets": [
+      "opportunity"
+    ],
+    "window_sizes": [
+      128
+    ],
+    "overlap_ratios": [
+      0.5
+    ],
+    "target_activities": {
+      "opportunity": [
+        "Open Door 1",
+        "Open Door 2",
+        "Close Door 1",
+        "Close Door 2",
+        "Open Fridge",
+        "Close Fridge",
+        "Toggle Switch"
+      ],
+      "pamap2": [
+        "walking",
+        "running",
+        "cycling",
+        "sitting",
+        "standing",
+        "ascending_stairs",
+        "descending_stairs"
+      ]
+    },
+    "min_samples_per_activity": 100,
+    "sensor_selection": {
+      "opportunity": {
+        "sensor_types": [
+          "IMU",
+          "Accelerometer"
+        ],
+        "body_parts": [
+          "RightLowerArm",
+          "LeftLowerArm",
+          "Back"
+        ],
+        "axes": [
+          "X",
+          "Y",
+          "Z"
+        ]
+      },
+      "pamap2": {
+        "sensor_locations": [
+          "hand",
+          "chest",
+          "ankle"
+        ],
+        "sensor_types": [
+          "accelerometer",
+          "gyroscope"
+        ],
+        "axes": [
+          "x",
+          "y",
+          "z"
+        ]
+      }
+    },
+    "quick_test": true,
+    "output_dir": "results/rq2_classification"
+  },
+  "start_time": "2025-06-14T18:15:16.795405",
+  "end_time": "2025-06-14T18:15:17.904565",
+  "total_duration_seconds": 1.1090519428253174
+}
