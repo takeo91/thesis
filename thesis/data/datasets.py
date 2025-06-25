@@ -679,18 +679,9 @@ class PAMAP2Dataset(SensorDataset):
     PAMAP2 physical activity monitoring dataset.
     """
     
-    def __init__(self, data_file: str):
-        """
-        Initialize the PAMAP2Dataset processor.
-        
-        Args:
-            data_file: Path to the sensor data file (e.g., "subject101.dat").
-        """
-        super().__init__(data_file)
-        self.time_column = "timestamp"
-        
-        # Column definitions for PAMAP2
-        self.column_definitions = {
+    def _setup_column_definitions(self) -> Dict[str, Union[int, slice]]:
+        """Setup column definitions for PAMAP2 dataset."""
+        return {
             "timestamp": 0,
             "activity_id": 1,
             "heart_rate": 2,
@@ -698,9 +689,10 @@ class PAMAP2Dataset(SensorDataset):
             "imu_chest": slice(20, 37),
             "imu_ankle": slice(37, 54),
         }
-        
-        # Activity mapping
-        self.activity_map = {
+    
+    def _setup_activity_mappings(self) -> Dict[int, str]:
+        """Setup activity ID to name mappings for PAMAP2."""
+        return {
             0: "other",
             1: "lying",
             2: "sitting",
@@ -721,9 +713,10 @@ class PAMAP2Dataset(SensorDataset):
             20: "playing_soccer",
             24: "rope_jumping",
         }
-        
-        # IMU sensors description
-        self.imu_columns = [
+    
+    def _setup_imu_columns(self) -> List[str]:
+        """Setup IMU column names for PAMAP2."""
+        return [
             "temperature",
             "acc_16g_x", "acc_16g_y", "acc_16g_z",
             "acc_6g_x", "acc_6g_y", "acc_6g_z",
@@ -731,59 +724,86 @@ class PAMAP2Dataset(SensorDataset):
             "mag_x", "mag_y", "mag_z",
             "orientation_1", "orientation_2", "orientation_3", "orientation_4"
         ]
+    
+    def _create_sensor_mappings_for_location(self, location: str) -> Dict[str, Dict[str, str]]:
+        """Create sensor mappings for a specific body location."""
+        mappings = {}
         
-        # Mapping from PAMAP2 columns to standardized structure
-        self.sensor_mapping = {
-            # Hand IMU
-            "acc_16g_x_hand": {"SensorType": "Accelerometer", "BodyPart": "Hand", "MeasurementType": "acc", "Axis": "X"},
-            "acc_16g_y_hand": {"SensorType": "Accelerometer", "BodyPart": "Hand", "MeasurementType": "acc", "Axis": "Y"},
-            "acc_16g_z_hand": {"SensorType": "Accelerometer", "BodyPart": "Hand", "MeasurementType": "acc", "Axis": "Z"},
-            "acc_6g_x_hand": {"SensorType": "Accelerometer", "BodyPart": "Hand", "MeasurementType": "acc_low", "Axis": "X"},
-            "acc_6g_y_hand": {"SensorType": "Accelerometer", "BodyPart": "Hand", "MeasurementType": "acc_low", "Axis": "Y"},
-            "acc_6g_z_hand": {"SensorType": "Accelerometer", "BodyPart": "Hand", "MeasurementType": "acc_low", "Axis": "Z"},
-            "gyro_x_hand": {"SensorType": "Gyroscope", "BodyPart": "Hand", "MeasurementType": "gyro", "Axis": "X"},
-            "gyro_y_hand": {"SensorType": "Gyroscope", "BodyPart": "Hand", "MeasurementType": "gyro", "Axis": "Y"},
-            "gyro_z_hand": {"SensorType": "Gyroscope", "BodyPart": "Hand", "MeasurementType": "gyro", "Axis": "Z"},
-            "mag_x_hand": {"SensorType": "Magnetometer", "BodyPart": "Hand", "MeasurementType": "mag", "Axis": "X"},
-            "mag_y_hand": {"SensorType": "Magnetometer", "BodyPart": "Hand", "MeasurementType": "mag", "Axis": "Y"},
-            "mag_z_hand": {"SensorType": "Magnetometer", "BodyPart": "Hand", "MeasurementType": "mag", "Axis": "Z"},
-            "temperature_hand": {"SensorType": "Temperature", "BodyPart": "Hand", "MeasurementType": "temp", "Axis": "N/A"},
-            
-            # Chest IMU
-            "acc_16g_x_chest": {"SensorType": "Accelerometer", "BodyPart": "Chest", "MeasurementType": "acc", "Axis": "X"},
-            "acc_16g_y_chest": {"SensorType": "Accelerometer", "BodyPart": "Chest", "MeasurementType": "acc", "Axis": "Y"},
-            "acc_16g_z_chest": {"SensorType": "Accelerometer", "BodyPart": "Chest", "MeasurementType": "acc", "Axis": "Z"},
-            "acc_6g_x_chest": {"SensorType": "Accelerometer", "BodyPart": "Chest", "MeasurementType": "acc_low", "Axis": "X"},
-            "acc_6g_y_chest": {"SensorType": "Accelerometer", "BodyPart": "Chest", "MeasurementType": "acc_low", "Axis": "Y"},
-            "acc_6g_z_chest": {"SensorType": "Accelerometer", "BodyPart": "Chest", "MeasurementType": "acc_low", "Axis": "Z"},
-            "gyro_x_chest": {"SensorType": "Gyroscope", "BodyPart": "Chest", "MeasurementType": "gyro", "Axis": "X"},
-            "gyro_y_chest": {"SensorType": "Gyroscope", "BodyPart": "Chest", "MeasurementType": "gyro", "Axis": "Y"},
-            "gyro_z_chest": {"SensorType": "Gyroscope", "BodyPart": "Chest", "MeasurementType": "gyro", "Axis": "Z"},
-            "mag_x_chest": {"SensorType": "Magnetometer", "BodyPart": "Chest", "MeasurementType": "mag", "Axis": "X"},
-            "mag_y_chest": {"SensorType": "Magnetometer", "BodyPart": "Chest", "MeasurementType": "mag", "Axis": "Y"},
-            "mag_z_chest": {"SensorType": "Magnetometer", "BodyPart": "Chest", "MeasurementType": "mag", "Axis": "Z"},
-            "temperature_chest": {"SensorType": "Temperature", "BodyPart": "Chest", "MeasurementType": "temp", "Axis": "N/A"},
-            
-            # Ankle IMU
-            "acc_16g_x_ankle": {"SensorType": "Accelerometer", "BodyPart": "Ankle", "MeasurementType": "acc", "Axis": "X"},
-            "acc_16g_y_ankle": {"SensorType": "Accelerometer", "BodyPart": "Ankle", "MeasurementType": "acc", "Axis": "Y"},
-            "acc_16g_z_ankle": {"SensorType": "Accelerometer", "BodyPart": "Ankle", "MeasurementType": "acc", "Axis": "Z"},
-            "acc_6g_x_ankle": {"SensorType": "Accelerometer", "BodyPart": "Ankle", "MeasurementType": "acc_low", "Axis": "X"},
-            "acc_6g_y_ankle": {"SensorType": "Accelerometer", "BodyPart": "Ankle", "MeasurementType": "acc_low", "Axis": "Y"},
-            "acc_6g_z_ankle": {"SensorType": "Accelerometer", "BodyPart": "Ankle", "MeasurementType": "acc_low", "Axis": "Z"},
-            "gyro_x_ankle": {"SensorType": "Gyroscope", "BodyPart": "Ankle", "MeasurementType": "gyro", "Axis": "X"},
-            "gyro_y_ankle": {"SensorType": "Gyroscope", "BodyPart": "Ankle", "MeasurementType": "gyro", "Axis": "Y"},
-            "gyro_z_ankle": {"SensorType": "Gyroscope", "BodyPart": "Ankle", "MeasurementType": "gyro", "Axis": "Z"},
-            "mag_x_ankle": {"SensorType": "Magnetometer", "BodyPart": "Ankle", "MeasurementType": "mag", "Axis": "X"},
-            "mag_y_ankle": {"SensorType": "Magnetometer", "BodyPart": "Ankle", "MeasurementType": "mag", "Axis": "Y"},
-            "mag_z_ankle": {"SensorType": "Magnetometer", "BodyPart": "Ankle", "MeasurementType": "mag", "Axis": "Z"},
-            "temperature_ankle": {"SensorType": "Temperature", "BodyPart": "Ankle", "MeasurementType": "temp", "Axis": "N/A"},
-            
-            # Other sensors
+        # Accelerometer mappings
+        for axis in ["x", "y", "z"]:
+            mappings[f"acc_16g_{axis}_{location}"] = {
+                "SensorType": "Accelerometer", 
+                "BodyPart": location.capitalize(), 
+                "MeasurementType": "acc", 
+                "Axis": axis.upper()
+            }
+            mappings[f"acc_6g_{axis}_{location}"] = {
+                "SensorType": "Accelerometer", 
+                "BodyPart": location.capitalize(), 
+                "MeasurementType": "acc_low", 
+                "Axis": axis.upper()
+            }
+        
+        # Gyroscope mappings
+        for axis in ["x", "y", "z"]:
+            mappings[f"gyro_{axis}_{location}"] = {
+                "SensorType": "Gyroscope", 
+                "BodyPart": location.capitalize(), 
+                "MeasurementType": "gyro", 
+                "Axis": axis.upper()
+            }
+        
+        # Magnetometer mappings
+        for axis in ["x", "y", "z"]:
+            mappings[f"mag_{axis}_{location}"] = {
+                "SensorType": "Magnetometer", 
+                "BodyPart": location.capitalize(), 
+                "MeasurementType": "mag", 
+                "Axis": axis.upper()
+            }
+        
+        # Temperature mapping
+        mappings[f"temperature_{location}"] = {
+            "SensorType": "Temperature", 
+            "BodyPart": location.capitalize(), 
+            "MeasurementType": "temp", 
+            "Axis": "N/A"
+        }
+        
+        return mappings
+    
+    def _setup_sensor_mappings(self) -> Dict[str, Dict[str, str]]:
+        """Setup complete sensor mappings for PAMAP2 dataset."""
+        mappings = {}
+        
+        # Add mappings for each body location
+        for location in ["hand", "chest", "ankle"]:
+            mappings.update(self._create_sensor_mappings_for_location(location))
+        
+        # Add non-IMU sensors
+        mappings.update({
             "heart_rate": {"SensorType": "HeartRate", "BodyPart": "Chest", "MeasurementType": "bpm", "Axis": "N/A"},
             "timestamp": {"SensorType": "Time", "BodyPart": "N/A", "MeasurementType": "Time", "Axis": "N/A"},
             "activity_id": {"SensorType": "Label", "BodyPart": "Activity", "MeasurementType": "Label", "Axis": "N/A"},
-        }
+        })
+        
+        return mappings
+
+    def __init__(self, data_file: str):
+        """
+        Initialize the PAMAP2Dataset processor.
+        
+        Args:
+            data_file: Path to the sensor data file (e.g., "subject101.dat").
+        """
+        super().__init__(data_file)
+        self.time_column = "timestamp"
+        
+        # Setup configuration using helper methods
+        self.column_definitions = self._setup_column_definitions()
+        self.activity_map = self._setup_activity_mappings()
+        self.imu_columns = self._setup_imu_columns()
+        self.sensor_mapping = self._setup_sensor_mappings()
         
     def load_data(self) -> None:
         """

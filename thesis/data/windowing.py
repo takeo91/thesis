@@ -454,7 +454,8 @@ def train_test_split_windows(
     test_fraction: float = 0.3,
     stratified: bool = True,
     random_state: int | None = None,
-) -> Tuple[WindowedData, WindowedData]:
+    return_indices: bool = False,
+) -> Tuple[WindowedData, WindowedData] | Tuple[WindowedData, WindowedData, np.ndarray, np.ndarray]:
     """Split *windowed_data* into a reference **library** and **query** set.
 
     Parameters
@@ -473,6 +474,8 @@ def train_test_split_windows(
         class distribution.
     random_state : int, optional
         Seed for RNG.
+    return_indices : bool, default False
+        If True, return the split indices (lib_indices, qry_indices) along with the WindowedData splits.
 
     Returns
     -------
@@ -515,7 +518,10 @@ def train_test_split_windows(
             metadata={**windowed_data.metadata, "subset_size": int(len(idx))},
         )
 
-    return _subset(lib_indices), _subset(qry_indices)
+    if return_indices:
+        return _subset(lib_indices), _subset(qry_indices), lib_indices, qry_indices
+    else:
+        return _subset(lib_indices), _subset(qry_indices)
 
 
 if __name__ == "__main__":

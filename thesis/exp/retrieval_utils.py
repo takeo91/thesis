@@ -13,6 +13,7 @@ __all__ = [
     "compute_hit_at_k",
     "compute_mean_reciprocal_rank",
     "compute_retrieval_metrics",
+    "compute_retrieval_metrics_multi",
 ]
 
 
@@ -95,4 +96,29 @@ def compute_retrieval_metrics(
         "hit@1": hit1,
         f"hit@{topk}": hitk,
         "mrr": mrr,
+    }
+
+
+def compute_retrieval_metrics_multi(
+    sim_matrix: np.ndarray,
+    query_activity_labels: Sequence,
+    library_activity_labels: Sequence,
+    query_sensor_types: Sequence,
+    library_sensor_types: Sequence,
+    query_sensor_locations: Sequence,
+    library_sensor_locations: Sequence,
+    *,
+    topk: int = 5,
+) -> Dict[str, float]:
+    """Return a dictionary with retrieval metrics for activity, sensor type, and sensor location independently."""
+    return {
+        "activity_hit@1": compute_hit_at_k(sim_matrix, query_activity_labels, library_activity_labels, k=1),
+        f"activity_hit@{topk}": compute_hit_at_k(sim_matrix, query_activity_labels, library_activity_labels, k=topk),
+        "activity_mrr": compute_mean_reciprocal_rank(sim_matrix, query_activity_labels, library_activity_labels),
+        "type_hit@1": compute_hit_at_k(sim_matrix, query_sensor_types, library_sensor_types, k=1),
+        f"type_hit@{topk}": compute_hit_at_k(sim_matrix, query_sensor_types, library_sensor_types, k=topk),
+        "type_mrr": compute_mean_reciprocal_rank(sim_matrix, query_sensor_types, library_sensor_types),
+        "loc_hit@1": compute_hit_at_k(sim_matrix, query_sensor_locations, library_sensor_locations, k=1),
+        f"loc_hit@{topk}": compute_hit_at_k(sim_matrix, query_sensor_locations, library_sensor_locations, k=topk),
+        "loc_mrr": compute_mean_reciprocal_rank(sim_matrix, query_sensor_locations, library_sensor_locations),
     } 
