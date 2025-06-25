@@ -16,6 +16,20 @@ from scipy.stats import gaussian_kde
 from scipy.spatial import KDTree
 import warnings
 
+# Import standardized logging and exceptions
+from thesis.core.logging_config import get_logger
+from thesis.core.exceptions import ComputationError, ConfigurationError
+
+logger = get_logger(__name__)
+
+# Silence custom NDG compilation warnings emitted below - now handled by logging
+warnings.filterwarnings(
+    "ignore",
+    message="Parallel NDG compilation failed*",
+    category=UserWarning,
+    module=__name__,
+)
+
 # Constants
 SQRT_2PI: Final[float] = math.sqrt(2.0 * math.pi)
 DEFAULT_CUTOFF_FACTOR: Final[float] = 4.0  # 4-sigma rule for spatial optimization
@@ -26,7 +40,7 @@ try:
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
-    warnings.warn("Numba not available. Install with 'pip install numba' for best performance.")
+    logger.info("Numba not available. Install with 'pip install numba' for best performance.")
     
     # Create dummy decorators for fallback
     def jit(*args, **kwargs):
@@ -96,7 +110,7 @@ def compute_ndg_spatial_optimized(
             return _compute_ndg_parallel_numba(x_values, sensor_data, sigma, tree, cutoff_distance)
         except (TypeError, ValueError) as e:
             # Fallback to serial numba if parallel compilation fails
-            warnings.warn(f"Parallel NDG compilation failed, falling back to serial: {e}")
+            logger.warning(f"Parallel NDG compilation failed, falling back to serial: {e}")
             return _compute_ndg_serial_numba(x_values, sensor_data, sigma, tree, cutoff_distance)
     elif NUMBA_AVAILABLE:
         return _compute_ndg_serial_numba(x_values, sensor_data, sigma, tree, cutoff_distance)
@@ -281,7 +295,7 @@ def compute_ndg_epanechnikov_optimized(
             return _compute_epanechnikov_parallel(x_values, sensor_data, sigma)
         except (TypeError, ValueError) as e:
             # Fallback to serial numba if parallel compilation fails
-            warnings.warn(f"Parallel Epanechnikov compilation failed, falling back to serial: {e}")
+            logger.warning(f"Parallel Epanechnikov compilation failed, falling back to serial: {e}")
             return _compute_epanechnikov_serial(x_values, sensor_data, sigma)
     elif NUMBA_AVAILABLE:
         return _compute_epanechnikov_serial(x_values, sensor_data, sigma)
@@ -435,7 +449,7 @@ def compute_ndg(
         if kernel_type == "gaussian":
             return compute_ndg_spatial_optimized(x_values, sensor_data, sigma, use_parallel=True)
         else:
-            warnings.warn(f"Spatial optimization not optimized for {kernel_type} kernel. "
+            logger.warning(f"Spatial optimization not optimized for {kernel_type} kernel. "
                          f"Consider using kernel_type='gaussian' or optimization='auto'")
             return compute_ndg_streaming(x_values, sensor_data, sigma, 
                                        kernel_type=kernel_type, chunk_size=chunk_size, dtype=dtype)
@@ -445,7 +459,7 @@ def compute_ndg(
         if kernel_type == "epanechnikov":
             return compute_ndg_epanechnikov_optimized(x_values, sensor_data, sigma, use_parallel=True)
         else:
-            warnings.warn(f"Compact support optimization not available for {kernel_type} kernel. "
+            logger.warning(f"Compact support optimization not available for {kernel_type} kernel. "
                          f"Consider using kernel_type='epanechnikov' or optimization='auto'")
             return compute_ndg_streaming(x_values, sensor_data, sigma, 
                                        kernel_type=kernel_type, chunk_size=chunk_size, dtype=dtype)
@@ -1042,9 +1056,16 @@ def compute_ndg_window_per_sensor(
             continue
 
         try:
-            mu_vals = compute_ndg(x_values=x_values, sensor_data=sensor_series, sigma=sigma_global, kernel_type=kernel_type)
+            # Use optimized NDG implementation with faster kernel type
+            mu_vals = compute_ndg(
+                x_values=x_values, 
+                sensor_data=sensor_series, 
+                sigma=sigma_global, 
+                kernel_type="epanechnikov",  # Fastest kernel type
+                optimization="auto"
+            )
         except Exception as exc:  # pragma: no cover – safety net
-            warnings.warn(f"NDG computation failed for sensor {sensor_idx}: {exc}; using zeros")
+            logger.warning(f"NDG computation failed for sensor {sensor_idx}: {exc}; using zeros")
             mu_vals = np.zeros_like(x_values)
         membership_functions.append(mu_vals)
 

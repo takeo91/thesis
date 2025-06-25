@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Union, Sequence
 
 import numpy as np
+from thesis.core.constants import NUMERICAL_TOLERANCE
 
 # Type definitions
 ArrayLike = Union[Sequence[float], np.ndarray]
@@ -29,13 +30,13 @@ def safe_divide(numerator: ArrayLike, denominator: ArrayLike, default: float = 0
     """
     if np.isscalar(denominator):
         # Handle scalar denominator
-        return numerator / denominator if np.abs(denominator) > 1e-9 else default
+        return numerator / denominator if np.abs(denominator) > NUMERICAL_TOLERANCE else default
     else:
         # Handle array denominator
         denominator = np.asarray(denominator)
         numerator = np.asarray(numerator)
         result = np.full_like(numerator, default, dtype=np.float64)
-        valid_indices = np.abs(denominator) > 1e-9
+        valid_indices = np.abs(denominator) > NUMERICAL_TOLERANCE
         
         # Ensure numerator matches shape for broadcasting or element-wise division
         if numerator.shape == denominator.shape:
