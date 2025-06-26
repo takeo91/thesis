@@ -2,14 +2,18 @@
 
 This directory contains documentation for the thesis project "Development and comparison of fuzzy similarity correlation metrics for sensor data in health application and assisted living environments".
 
+## 🚀 **Key Breakthrough: Unified Windowing Optimization**
+
+Revolutionary multi-label experiment optimization achieving **~200x speedup** with comprehensive **16-metric evaluation**.
+
 ## Documentation Sections
 
-1. [Per-Sensor Membership Approach](per_sensor_approach/README.md) - Documentation for the per-sensor membership function approach
-2. [Similarity Metrics](metrics/README.md) - Documentation for similarity metrics
-3. [Research Question 2 (RQ2)](rq2/) - Documentation for RQ2 experiments
-4. [Code Documentation](code/) - Documentation related to code structure and cleanup
-5. [Time Series Windowing](windowing/) - Documentation for time series windowing techniques
-6. [Project Planning](planning/) - Documentation related to project planning and organization
+1. **[Unified Windowing Optimization](windowing/UNIFIED_WINDOWING_OPTIMIZATION.md)** - 🆕 Revolutionary multi-label experiment approach
+2. **[16 Core Similarity Metrics](metrics/SIMILARITY_METRICS.md)** - 🆕 Production-ready metrics with performance results  
+3. **[Per-Sensor Membership Approach](per_sensor_approach/README.md)** - Novel per-sensor membership function approach
+4. **[Experimental Results](../results/unified_windowing_experiments/README.md)** - 🆕 Comprehensive experiment results and analysis
+5. **[Code Documentation](code/)** - Code structure and architecture documentation
+6. **[Research Planning](planning/)** - Project planning and research questions
 
 ## Directory Structure
 

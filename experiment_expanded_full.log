@@ -188,3 +188,8 @@ INFO:thesis.exp.unified_windowing_experiment:   📈 MeanDiceCoefficient progres
 INFO:thesis.exp.unified_windowing_experiment:   📈 JensenShannon progress: 388/3888 (10.0%)
 INFO:thesis.exp.unified_windowing_experiment:   📈 HellingerDistance progress: 388/3888 (10.0%)
 INFO:thesis.exp.unified_windowing_experiment:   📈 BhattacharyyaCoefficient progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanDiceCoefficient progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 HellingerDistance progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 BhattacharyyaCoefficient progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 JensenShannon progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanDiceCoefficient progress: 776/3888 (20.0%)
