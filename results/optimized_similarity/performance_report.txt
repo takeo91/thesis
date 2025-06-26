@@ -1,0 +1,33 @@
+# Performance Profile Report
+# Generated: 2025-06-19T01:20:01.054402
+# Experiment: rq2_unified_20250619_011956
+# Approach: per_sensor
+
+         11837047 function calls (11230124 primitive calls) in 4.114 seconds
+
+   Ordered by: cumulative time
+   List reduced from 4297 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      4/1    0.000    0.000    4.116    4.116 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:1206(profile_section)
+        1    0.009    0.009    4.116    4.116 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:897(run_dataset_experiments)
+        1    0.000    0.000    3.521    3.521 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:726(run_windowing_experiment)
+        1    0.000    0.000    3.517    3.517 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:329(compute_per_sensor_pairwise_similarities)
+       11    0.004    0.000    3.485    0.317 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:135(compute_per_sensor_membership_optimized)
+     1254    0.001    0.000    3.476    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:882(compute_membership_functions)
+     1254    0.004    0.000    3.476    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:672(compute_membership_function_optimized)
+     1254    0.001    0.000    3.462    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:352(compute_ndg)
+     1254    0.003    0.000    3.461    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:45(compute_ndg_spatial_optimized)
+     1254    0.058    0.000    3.309    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:139(_compute_ndg_parallel_numba)
+       12    0.000    0.000    2.916    0.243 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:344(_compile_for_args)
+    39/12    0.000    0.000    2.905    0.242 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:858(compile)
+    13/11    0.000    0.000    2.786    0.253 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:79(compile)
+    13/11    0.000    0.000    2.786    0.253 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:86(_compile_cached)
+    13/11    0.000    0.000    2.786    0.253 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:101(_compile_core)
+    13/11    0.000    0.000    2.785    0.253 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/compiler.py:713(compile_extra)
+ 1067/587    0.001    0.000    2.782    0.005 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/compiler_lock.py:32(_acquire_compile_lock)
+    15/11    0.000    0.000    2.781    0.253 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/compiler.py:433(compile_extra)
+    15/11    0.000    0.000    2.775    0.252 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/compiler.py:500(_compile_bytecode)
+    26/11    0.000    0.000    2.775    0.252 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/compiler.py:456(_compile_core)
+
+

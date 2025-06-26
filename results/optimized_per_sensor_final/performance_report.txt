@@ -1,0 +1,33 @@
+# Performance Profile Report
+# Generated: 2025-06-19T00:56:24.857003
+# Experiment: rq2_unified_20250619_005205
+# Approach: per_sensor
+
+         1533343019 function calls (1525453937 primitive calls) in 258.764 seconds
+
+   Ordered by: cumulative time
+   List reduced from 4225 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      4/1    0.000    0.000  258.799  258.799 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:1059(profile_section)
+        1    0.007    0.007  258.799  258.799 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:750(run_dataset_experiments)
+        1    0.000    0.000  258.186  258.186 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:579(run_windowing_experiment)
+        1    0.001    0.001  258.184  258.184 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:249(compute_per_sensor_pairwise_similarities)
+      190    0.091    0.000  214.170    1.127 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:198(compute_per_sensor_similarity)
+    22720    0.690    0.000  214.073    0.009 /Users/nterlemes/personal/thesis/thesis/fuzzy/similarity.py:670(calculate_all_similarity_metrics)
+    22720    0.102    0.000  199.564    0.009 /Users/nterlemes/personal/thesis/thesis/fuzzy/similarity.py:573(similarity_energy_distance)
+    71181   33.837    0.000  199.457    0.003 {built-in method builtins.sum}
+224946401   49.996    0.000   58.334    0.000 /Users/nterlemes/personal/thesis/thesis/fuzzy/similarity.py:589(<genexpr>)
+224940819   49.806    0.000   58.155    0.000 /Users/nterlemes/personal/thesis/thesis/fuzzy/similarity.py:597(<genexpr>)
+227222720   40.867    0.000   49.131    0.000 /Users/nterlemes/personal/thesis/thesis/fuzzy/similarity.py:584(<genexpr>)
+      151    0.051    0.000   44.012    0.291 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:134(compute_per_sensor_membership_optimized)
+    17214    0.008    0.000   43.891    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:882(compute_membership_functions)
+    17214    0.055    0.000   43.883    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:672(compute_membership_function_optimized)
+    17214    0.015    0.000   43.702    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:352(compute_ndg)
+    17214    0.047    0.000   43.681    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:45(compute_ndg_spatial_optimized)
+    17214    0.817    0.000   43.199    0.003 /Users/nterlemes/personal/thesis/thesis/fuzzy/membership.py:139(_compute_ndg_parallel_numba)
+      152    0.002    0.000   36.210    0.238 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:344(_compile_for_args)
+  459/152    0.005    0.000   36.182    0.238 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:858(compile)
+  153/151    0.000    0.000   36.005    0.238 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/numba/core/dispatcher.py:79(compile)
+
+

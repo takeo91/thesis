@@ -1,0 +1,33 @@
+# Performance Profile Report
+# Generated: 2025-06-19T01:53:50.102304
+# Experiment: rq2_unified_20250619_015222
+# Approach: per_sensor
+
+         233896 function calls (230937 primitive calls) in 0.667 seconds
+
+   Ordered by: cumulative time
+   List reduced from 961 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.666    0.666 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:1249(profile_section)
+        1    0.007    0.007    0.665    0.665 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:940(run_dataset_experiments)
+        1    0.027    0.027    0.549    0.549 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:583(load_opportunity_dataset)
+        1    0.000    0.000    0.490    0.490 /Users/nterlemes/personal/thesis/thesis/data/datasets.py:295(create_opportunity_dataset)
+        1    0.006    0.006    0.490    0.490 /Users/nterlemes/personal/thesis/thesis/data/datasets.py:386(load_data)
+        1    0.000    0.000    0.400    0.400 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/io/parsers/readers.py:868(read_csv)
+        1    0.005    0.005    0.400    0.400 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/io/parsers/readers.py:583(_read)
+        1    0.000    0.000    0.394    0.394 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/io/parsers/readers.py:1907(read)
+        1    0.329    0.329    0.365    0.365 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/io/parsers/c_parser_wrapper.py:222(read)
+        1    0.108    0.108    0.109    0.109 /Users/nterlemes/personal/thesis/thesis/exp/rq2_experiment.py:692(subsample_data)
+   267/11    0.001    0.000    0.036    0.003 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/frame.py:4271(__setitem__)
+        3    0.000    0.000    0.034    0.011 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/frame.py:4320(_setitem_array)
+        1    0.003    0.003    0.033    0.033 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/io/parsers/c_parser_wrapper.py:355(_concatenate_chunks)
+      264    0.000    0.000    0.031    0.000 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/frame.py:4514(_set_item)
+      250    0.009    0.000    0.029    0.000 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/dtypes/concat.py:52(concat_compat)
+        2    0.000    0.000    0.029    0.015 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/frame.py:694(__init__)
+        1    0.000    0.000    0.029    0.029 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/internals/construction.py:423(dict_to_mgr)
+        2    0.001    0.001    0.028    0.014 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/internals/construction.py:96(arrays_to_mgr)
+        7    0.000    0.000    0.027    0.004 /Users/nterlemes/personal/thesis/.venv/lib/python3.13/site-packages/pandas/core/internals/managers.py:317(apply)
+        1    0.002    0.002    0.026    0.026 /Users/nterlemes/personal/thesis/thesis/data/datasets.py:421(_process_labels)
+
+

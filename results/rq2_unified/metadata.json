@@ -1,0 +1,30 @@
+{
+  "experiment_id": "rq2_unified_20250619_001002",
+  "config": {
+    "datasets": [
+      "opportunity"
+    ],
+    "opportunity_label_type": "Locomotion",
+    "window_sizes": [
+      64
+    ],
+    "overlap_ratios": [
+      0.5
+    ],
+    "min_samples_per_class": 10,
+    "use_per_sensor": true,
+    "similarity_metrics": [
+      "jaccard"
+    ],
+    "kernel_type": "gaussian",
+    "sigma_method": "adaptive",
+    "n_jobs": 11,
+    "max_samples": 5000,
+    "output_dir": "results/rq2_unified",
+    "quick_test": false
+  },
+  "start_time": "2025-06-19T00:10:02.625140",
+  "approach": "per_sensor",
+  "end_time": "2025-06-19T00:11:06.114293",
+  "total_configurations": 1
+}

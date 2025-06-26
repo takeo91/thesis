@@ -1,0 +1,2 @@
+dataset,window_size,overlap_ratio,metric_name,macro_f1,balanced_accuracy,accuracy,n_windows,n_classes,computation_time
+opportunity,64,0.5,jaccard,0.9840700915969732,0.9840700915969732,0.9867549668874173,151,3,62.97973990440369

@@ -1,0 +1,104 @@
+2025-06-25 19:46:23,616 - __main__ - INFO - 🔄 Using 5 core metrics with per-sensor approach
+2025-06-25 19:46:23,616 - __main__ - INFO - 🚀 Unified RQ2 Experiment initialized: rq2_unified_20250625_194623
+2025-06-25 19:46:23,617 - __main__ - INFO - 📊 Approach: Per-Sensor
+2025-06-25 19:46:23,617 - __main__ - INFO - 
+🚀 Starting unified RQ2 experiments
+2025-06-25 19:46:23,617 - __main__ - INFO - 📋 Datasets: ['opportunity']
+2025-06-25 19:46:23,617 - __main__ - INFO - 🔧 Approach: Per-Sensor
+2025-06-25 19:46:23,617 - __main__ - INFO - 
+🔬 Running experiments for opportunity dataset
+2025-06-25 19:46:23,617 - __main__ - INFO - 📊 Loading Opportunity dataset (ML_Both_Arms labels)...
+/Users/nterlemes/personal/thesis_unified/thesis/thesis/data/datasets.py:406: FutureWarning: DataFrame.fillna with 'method' is deprecated and will raise in a future version. Use obj.ffill() or obj.bfill() instead.
+  self.df.fillna(method="ffill", inplace=True)
+/Users/nterlemes/personal/thesis_unified/thesis/thesis/exp/rq2_experiment.py:327: PerformanceWarning: indexing past lexsort depth may impact performance.
+  labels = df.loc[:, idx["Label", label_type, "Label", "N/A"]].values
+2025-06-25 19:46:24,418 - __main__ - INFO -    Successfully loaded ML_Both_Arms labels
+2025-06-25 19:46:24,468 - __main__ - INFO -    Dataset shape: (4844, 120)
+2025-06-25 19:46:24,468 - __main__ - INFO -    Activities: ['Clean Table' 'Close Dishwasher' 'Close Door 1' 'Close Door 2'
+ 'Close Drawer 1' 'Close Drawer 2' 'Close Drawer 3' 'Close Fridge'
+ 'Drink from Cup' 'Open Dishwasher' 'Open Door 1' 'Open Door 2'
+ 'Open Drawer 1' 'Open Drawer 2' 'Open Drawer 3' 'Open Fridge'
+ 'Toggle Switch']
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Clean Table: 197 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Close Dishwasher: 107 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Close Door 1: 271 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Close Door 2: 405 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Close Drawer 1: 152 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Close Drawer 2: 199 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Close Drawer 3: 249 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Close Fridge: 244 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Drink from Cup: 1153 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Open Dishwasher: 99 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Open Door 1: 452 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Open Door 2: 329 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Open Drawer 1: 149 samples
+2025-06-25 19:46:24,468 - __main__ - INFO -      - Open Drawer 2: 200 samples
+2025-06-25 19:46:24,469 - __main__ - INFO -      - Open Drawer 3: 197 samples
+2025-06-25 19:46:24,469 - __main__ - INFO -      - Open Fridge: 384 samples
+2025-06-25 19:46:24,469 - __main__ - INFO -      - Toggle Switch: 57 samples
+2025-06-25 19:46:24,480 - __main__ - INFO - 
+📐 Configuration 1/4
+2025-06-25 19:46:24,480 - __main__ - INFO -    Window size: 120, Overlap: 0.5
+2025-06-25 19:46:24,483 - __main__ - INFO -      Windows: 77, Classes: 16
+2025-06-25 19:46:24,483 - __main__ - INFO -      Class distribution: [ 4  2  5  5  2  2  4  3 19  2  8  5  4  3  3  6]
+2025-06-25 19:46:24,483 - __main__ - INFO -      Balance ratio: 0.105
+2025-06-25 19:46:24,484 - __main__ - INFO -      Computing 5 metrics using optimized per-sensor approach...
+2025-06-25 19:46:24,484 - thesis.fuzzy.similarity - INFO - 🔄 Computing per-sensor membership functions for 77 query and 77 library windows…
+2025-06-25 19:52:31,428 - __main__ - INFO -      Computation time: 366.94s
+2025-06-25 19:52:31,429 - __main__ - INFO -      Top metrics by Macro F1:
+2025-06-25 19:52:31,429 - __main__ - INFO -        1. Cosine: 0.205
+2025-06-25 19:52:31,429 - __main__ - INFO -        2. Pearson: 0.205
+2025-06-25 19:52:31,429 - __main__ - INFO -        3. Dice: 0.179
+2025-06-25 19:52:31,433 - __main__ - INFO - 💾 Checkpoint saved: 1/1 datasets, 1 configs
+2025-06-25 19:52:31,434 - __main__ - INFO - 
+📐 Configuration 2/4
+2025-06-25 19:52:31,434 - __main__ - INFO -    Window size: 120, Overlap: 0.7
+2025-06-25 19:52:31,438 - __main__ - INFO -      Windows: 131, Classes: 17
+2025-06-25 19:52:31,438 - __main__ - INFO -      Class distribution: [ 6  4  7 10  4  3  7  4 32  3 12 10  5  5  6 11  2]
+2025-06-25 19:52:31,438 - __main__ - INFO -      Balance ratio: 0.062
+2025-06-25 19:52:31,438 - __main__ - INFO -      Computing 5 metrics using optimized per-sensor approach...
+2025-06-25 19:52:31,438 - thesis.fuzzy.similarity - INFO - 🔄 Computing per-sensor membership functions for 131 query and 131 library windows…
+2025-06-25 20:17:43,921 - __main__ - INFO -      Computation time: 1512.48s
+2025-06-25 20:17:43,922 - __main__ - INFO -      Top metrics by Macro F1:
+2025-06-25 20:17:43,922 - __main__ - INFO -        1. Pearson: 0.443
+2025-06-25 20:17:43,922 - __main__ - INFO -        2. Cosine: 0.440
+2025-06-25 20:17:43,922 - __main__ - INFO -        3. Dice: 0.397
+2025-06-25 20:17:43,942 - __main__ - INFO - 💾 Checkpoint saved: 1/1 datasets, 2 configs
+2025-06-25 20:17:43,942 - __main__ - INFO - 
+📐 Configuration 3/4
+2025-06-25 20:17:43,942 - __main__ - INFO -    Window size: 180, Overlap: 0.5
+2025-06-25 20:17:43,945 - __main__ - INFO -      Windows: 47, Classes: 11
+2025-06-25 20:17:43,946 - __main__ - INFO -      Class distribution: [ 2  2  3  3  0  0  3  0 14  0  6  5  0  2  3  4]
+2025-06-25 20:17:43,946 - __main__ - INFO -      Balance ratio: 0.143
+2025-06-25 20:17:43,946 - __main__ - INFO -      Computing 5 metrics using optimized per-sensor approach...
+2025-06-25 20:17:43,946 - thesis.fuzzy.similarity - INFO - 🔄 Computing per-sensor membership functions for 47 query and 47 library windows…
+2025-06-25 20:19:27,148 - __main__ - INFO -      Computation time: 103.20s
+2025-06-25 20:19:27,148 - __main__ - INFO -      Top metrics by Macro F1:
+2025-06-25 20:19:27,148 - __main__ - INFO -        1. Jaccard: 0.154
+2025-06-25 20:19:27,149 - __main__ - INFO -        2. Dice: 0.152
+2025-06-25 20:19:27,149 - __main__ - INFO -        3. OverlapCoefficient: 0.152
+2025-06-25 20:19:27,174 - __main__ - INFO - 💾 Checkpoint saved: 1/1 datasets, 3 configs
+2025-06-25 20:19:27,174 - __main__ - INFO - 
+📐 Configuration 4/4
+2025-06-25 20:19:27,174 - __main__ - INFO -    Window size: 180, Overlap: 0.7
+2025-06-25 20:19:27,178 - __main__ - INFO -      Windows: 82, Classes: 13
+2025-06-25 20:19:27,178 - __main__ - INFO -      Class distribution: [ 3  3  5  6  0  2  6  0 22  2 10  8  0  3  4  8]
+2025-06-25 20:19:27,178 - __main__ - INFO -      Balance ratio: 0.091
+2025-06-25 20:19:27,178 - __main__ - INFO -      Computing 5 metrics using optimized per-sensor approach...
+2025-06-25 20:19:27,178 - thesis.fuzzy.similarity - INFO - 🔄 Computing per-sensor membership functions for 82 query and 82 library windows…
+/Users/nterlemes/personal/thesis_unified/thesis/.venv/lib/python3.13/site-packages/joblib/externals/loky/process_executor.py:752: UserWarning: A worker stopped while some jobs were given to the executor. This can be caused by a too short worker timeout or by a memory leak.
+  warnings.warn(
+2025-06-25 20:56:52,772 - __main__ - INFO -      Computation time: 2245.59s
+2025-06-25 20:56:52,773 - __main__ - INFO -      Top metrics by Macro F1:
+2025-06-25 20:56:52,773 - __main__ - INFO -        1. Pearson: 0.349
+2025-06-25 20:56:52,773 - __main__ - INFO -        2. Cosine: 0.347
+2025-06-25 20:56:52,773 - __main__ - INFO -        3. Jaccard: 0.337
+2025-06-25 20:56:52,807 - __main__ - INFO - 💾 Checkpoint saved: 1/1 datasets, 4 configs
+2025-06-25 20:56:52,807 - __main__ - INFO - ✅ Completed opportunity: 4 configurations
+2025-06-25 20:56:52,823 - __main__ - INFO - 💾 Checkpoint saved: 1/1 datasets, 4 configs
+2025-06-25 20:56:52,823 - __main__ - INFO - 
+🎉 All experiments completed!
+2025-06-25 20:56:52,823 - __main__ - INFO - 📊 Total configurations: 4
+2025-06-25 20:56:52,823 - __main__ - INFO - 💾 Saving results to results/rq2_extended_fixed/ML_Both_Arms
+2025-06-25 20:56:52,852 - __main__ - INFO - 📋 Summary saved: 20 rows
+2025-06-25 20:56:52,852 - __main__ - INFO - 🎯 Experiment completed successfully!

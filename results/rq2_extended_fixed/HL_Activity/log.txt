@@ -1,0 +1,40 @@
+2025-06-25 19:46:33,934 - __main__ - INFO - 🔄 Using 5 core metrics with per-sensor approach
+2025-06-25 19:46:33,934 - __main__ - INFO - 🚀 Unified RQ2 Experiment initialized: rq2_unified_20250625_194633
+2025-06-25 19:46:33,934 - __main__ - INFO - 📊 Approach: Per-Sensor
+2025-06-25 19:46:33,934 - __main__ - INFO - 
+🚀 Starting unified RQ2 experiments
+2025-06-25 19:46:33,934 - __main__ - INFO - 📋 Datasets: ['opportunity']
+2025-06-25 19:46:33,934 - __main__ - INFO - 🔧 Approach: Per-Sensor
+2025-06-25 19:46:33,934 - __main__ - INFO - 
+🔬 Running experiments for opportunity dataset
+2025-06-25 19:46:33,934 - __main__ - INFO - 📊 Loading Opportunity dataset (HL_Activity labels)...
+/Users/nterlemes/personal/thesis_unified/thesis/thesis/data/datasets.py:406: FutureWarning: DataFrame.fillna with 'method' is deprecated and will raise in a future version. Use obj.ffill() or obj.bfill() instead.
+  self.df.fillna(method="ffill", inplace=True)
+/Users/nterlemes/personal/thesis_unified/thesis/thesis/exp/rq2_experiment.py:327: PerformanceWarning: indexing past lexsort depth may impact performance.
+  labels = df.loc[:, idx["Label", label_type, "Label", "N/A"]].values
+2025-06-25 19:46:34,646 - __main__ - INFO -    Successfully loaded HL_Activity labels
+2025-06-25 19:46:34,696 - __main__ - INFO -    Dataset shape: (35530, 120)
+2025-06-25 19:46:34,696 - __main__ - INFO -    Activities: ['Cleanup' 'Coffee time' 'Early morning' 'Relaxing' 'Sandwich time']
+2025-06-25 19:46:34,696 - __main__ - INFO -      - Cleanup: 5132 samples
+2025-06-25 19:46:34,696 - __main__ - INFO -      - Coffee time: 5701 samples
+2025-06-25 19:46:34,696 - __main__ - INFO -      - Early morning: 12609 samples
+2025-06-25 19:46:34,696 - __main__ - INFO -      - Relaxing: 1853 samples
+2025-06-25 19:46:34,696 - __main__ - INFO -      - Sandwich time: 10235 samples
+2025-06-25 19:46:34,701 - __main__ - INFO - 
+📐 Configuration 1/4
+2025-06-25 19:46:34,701 - __main__ - INFO -    Window size: 120, Overlap: 0.5
+2025-06-25 19:46:34,716 - __main__ - INFO -      Windows: 591, Classes: 5
+2025-06-25 19:46:34,717 - __main__ - INFO -      Class distribution: [ 85  95 210  30 171]
+2025-06-25 19:46:34,717 - __main__ - INFO -      Balance ratio: 0.143
+2025-06-25 19:46:34,717 - __main__ - INFO -      Computing 5 metrics using optimized per-sensor approach...
+2025-06-25 19:46:34,717 - thesis.fuzzy.similarity - INFO - 🔄 Computing per-sensor membership functions for 591 query and 591 library windows…
+/Users/nterlemes/personal/thesis_unified/thesis/.venv/lib/python3.13/site-packages/joblib/externals/loky/process_executor.py:752: UserWarning: A worker stopped while some jobs were given to the executor. This can be caused by a too short worker timeout or by a memory leak.
+  warnings.warn(
+/Users/nterlemes/personal/thesis_unified/thesis/.venv/lib/python3.13/site-packages/joblib/externals/loky/backend/resource_tracker.py:314: UserWarning: resource_tracker: There appear to be 17 leaked semlock objects to clean up at shutdown
+  warnings.warn(
+/Users/nterlemes/personal/thesis_unified/thesis/.venv/lib/python3.13/site-packages/joblib/externals/loky/backend/resource_tracker.py:314: UserWarning: resource_tracker: There appear to be 2 leaked folder objects to clean up at shutdown
+  warnings.warn(
+/Users/nterlemes/personal/thesis_unified/thesis/.venv/lib/python3.13/site-packages/joblib/externals/loky/backend/resource_tracker.py:330: UserWarning: resource_tracker: /tmp/joblib_memmapping_folder_39866_29cd82f3a4454536abbfa380c4165236_0136905f14d046338fea7c2540805923: FileNotFoundError(2, 'No such file or directory')
+  warnings.warn(f"resource_tracker: {name}: {e!r}")
+/Users/nterlemes/personal/thesis_unified/thesis/.venv/lib/python3.13/site-packages/joblib/externals/loky/backend/resource_tracker.py:330: UserWarning: resource_tracker: /tmp/joblib_memmapping_folder_39866_29cd82f3a4454536abbfa380c4165236_45451d6d0e5c4648a85b1e54b50d16ac: FileNotFoundError(2, 'No such file or directory')
+  warnings.warn(f"resource_tracker: {name}: {e!r}")
