@@ -1,0 +1,190 @@
+INFO:thesis.exp.unified_windowing_experiment:🚀 Running unified multi-label experiment
+INFO:thesis.exp.unified_windowing_experiment:   Label types: ['Locomotion', 'ML_Both_Arms', 'HL_Activity']
+INFO:thesis.exp.unified_windowing_experiment:   Metrics: ['jaccard', 'cosine', 'dice', 'pearson', 'overlap_coefficient', 'JensenShannon', 'BhattacharyyaCoefficient', 'HellingerDistance', 'Similarity_Euclidean', 'Similarity_Chebyshev', 'Similarity_Hamming', 'MeanMinOverMax', 'MeanDiceCoefficient', 'HarmonicMean', 'EarthMoversDistance', 'EnergyDistance']
+INFO:thesis.exp.unified_windowing_experiment:🪟 Creating standard windows for opportunity
+/Users/nterlemes/personal/thesis_unified/thesis/thesis/data/datasets.py:406: FutureWarning: DataFrame.fillna with 'method' is deprecated and will raise in a future version. Use obj.ffill() or obj.bfill() instead.
+  self.df.fillna(method="ffill", inplace=True)
+/Users/nterlemes/personal/thesis_unified/thesis/thesis/exp/unified_windowing_experiment.py:93: PerformanceWarning: indexing past lexsort depth may impact performance.
+  labels = df.loc[:, idx["Label", label_type, "Label", "N/A"]].values
+INFO:thesis.exp.unified_windowing_experiment:   Loaded Locomotion: 4 unique activities
+INFO:thesis.exp.unified_windowing_experiment:   Loaded ML_Both_Arms: 17 unique activities
+INFO:thesis.exp.unified_windowing_experiment:   Loaded HL_Activity: 5 unique activities
+INFO:thesis.exp.unified_windowing_experiment:📦 Creating windows (size=120, overlap=0.5)
+INFO:thesis.exp.unified_windowing_experiment:   Created 850 standard windows
+INFO:thesis.exp.unified_windowing_experiment:📊 Created 850 standard windows
+INFO:thesis.exp.unified_windowing_experiment:⚡ Pre-computing membership functions for all 850 standard windows...
+INFO:thesis.exp.unified_windowing_experiment:⚡ Computing membership functions with caching for 850 windows
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 0/850 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 50/850 (5.9%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 100/850 (11.8%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 150/850 (17.6%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 200/850 (23.5%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 250/850 (29.4%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 300/850 (35.3%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 350/850 (41.2%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 400/850 (47.1%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 450/850 (52.9%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 500/850 (58.8%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 550/850 (64.7%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 600/850 (70.6%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 650/850 (76.5%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 700/850 (82.4%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 750/850 (88.2%)
+INFO:thesis.exp.unified_windowing_experiment:   Progress: 800/850 (94.1%)
+INFO:thesis.exp.unified_windowing_experiment:📈 Cache hit rate: 0.47% (4/850 windows)
+INFO:thesis.data.cache:💾 Saved cache with 846 entries
+INFO:thesis.exp.unified_windowing_experiment:✅ Membership functions computed and cached for reuse across all label types
+INFO:thesis.exp.unified_windowing_experiment:🚀 EXPERIMENT PROGRESS: Processing label type 1/3: Locomotion
+INFO:thesis.exp.unified_windowing_experiment:🧪 Running experiment for Locomotion (using cached membership functions)
+INFO:thesis.exp.unified_windowing_experiment:📊 Locomotion: 628 windows, 4 activities (majority vote)
+INFO:thesis.exp.unified_windowing_experiment:📊 Mapped 628 filtered windows to cached membership functions
+INFO:thesis.exp.unified_windowing_experiment:📊 Class distribution: {np.str_('Stand'): 381, np.str_('Walk'): 104, np.str_('Lie'): 18, np.str_('Sit'): 125}
+INFO:thesis.exp.unified_windowing_experiment:📊 WindowedData shape: windows=(628, 120, 120), labels=(628,)
+INFO:thesis.exp.unified_windowing_experiment:📊 Improved balancing to 36 windows per class (was 18)
+INFO:thesis.exp.unified_windowing_experiment:📊 Using library_per_class=18
+INFO:thesis.exp.unified_windowing_experiment:📊 Split: 72 library, 54 query windows
+INFO:thesis.exp.unified_windowing_experiment:📊 Reduced from 628 to 126 balanced windows
+INFO:thesis.exp.unified_windowing_experiment:📊 Computing 62,208 similarities (efficient query×library)
+INFO:thesis.exp.unified_windowing_experiment:🔄 Computing similarities for 16 metrics using parallel optimized function
+INFO:thesis.exp.unified_windowing_experiment:🚀 Computing 54×72 query-library similarities for 16 metrics (EFFICIENT)
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing jaccard similarities...
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing cosine similarities...
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing dice similarities...
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing pearson similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for jaccard
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for cosine
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for dice
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for pearson
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 jaccard progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ jaccard completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing overlap_coefficient similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for overlap_coefficient
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 dice progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ dice completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing JensenShannon similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for JensenShannon
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 JensenShannon progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 pearson progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ pearson completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing BhattacharyyaCoefficient similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for BhattacharyyaCoefficient
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 BhattacharyyaCoefficient progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 overlap_coefficient progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ overlap_coefficient completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing HellingerDistance similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for HellingerDistance
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 HellingerDistance progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 cosine progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ cosine completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing Similarity_Euclidean similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for Similarity_Euclidean
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Euclidean progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ Similarity_Euclidean completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing Similarity_Chebyshev similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for Similarity_Chebyshev
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Chebyshev progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ Similarity_Chebyshev completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing Similarity_Hamming similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for Similarity_Hamming
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 Similarity_Hamming progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ Similarity_Hamming completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing MeanMinOverMax similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for MeanMinOverMax
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 776/3888 (20.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 1164/3888 (29.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 1552/3888 (39.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 1940/3888 (49.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 2328/3888 (59.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 2716/3888 (69.9%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 3104/3888 (79.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 3492/3888 (89.8%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanMinOverMax progress: 3880/3888 (99.8%)
+INFO:thesis.exp.unified_windowing_experiment:   ✅ MeanMinOverMax completed - 3,888 computations finished
+INFO:thesis.exp.unified_windowing_experiment:   🔄 Computing MeanDiceCoefficient similarities...
+INFO:thesis.exp.unified_windowing_experiment:   📊 Processing 3,888 pairs for MeanDiceCoefficient
+INFO:thesis.exp.unified_windowing_experiment:   📈 MeanDiceCoefficient progress: 0/3888 (0.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 JensenShannon progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 HellingerDistance progress: 388/3888 (10.0%)
+INFO:thesis.exp.unified_windowing_experiment:   📈 BhattacharyyaCoefficient progress: 388/3888 (10.0%)

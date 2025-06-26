@@ -68,16 +68,36 @@ venv.bak/
 
 # Project specific
 Data/
-results/*/
 plots/
-!thesis/data/
+
+# Temporary files and logs
+*.log
+*.prof
+*.pstats
+*.tmp
+
+# Test and debug results (keep only important ones)
+results/*test*/
+results/debug_*/
+results/*quick*/
+results/*ultra*/
+results/*lightning*/
+
+# Keep important research results
 !results/metric_comparison/
-!results/per_sensor_quick_test/
-!results/per_sensor_test/
+!results/ndg_vs_kde/
 !results/rq2_classification/
-!results/rq2_mini_test/
-!results/rq2_per_sensor/
+!results/rq2_extended_fixed/
+!results/pilot_grid/rq2_parallel/
 
 # OS specific
 .DS_Store
-Thumbs.db
+Thumbs.db# Large files that should be ignored
+cache/**/*.pkl
+results/**/*.pkl
+*.pkl
+**/*.pkl
+
+# Temporary experiment logs (keep only organized ones)
+experiment_*.log
+!experiment_expanded_full.log

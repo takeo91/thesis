@@ -573,7 +573,7 @@ class UnifiedRQ2Experiment:
                 similarity_matrices = self.profile_section(
                     "Per-sensor ALL vectorizable metrics computation",
                     compute_per_sensor_pairwise_similarities,
-                    windows=windowed_data.windows,
+                    windows_query=windowed_data.windows,
                     metrics=metrics_to_use,
                     kernel_type=self.config.ndg_kernel_type,
                     sigma_method=self.config.ndg_sigma_method,
@@ -604,7 +604,7 @@ class UnifiedRQ2Experiment:
                 similarity_matrices = self.profile_section(
                     "Per-sensor subset metrics computation",
                     compute_per_sensor_pairwise_similarities,
-                    windows=windowed_data.windows,
+                    windows_query=windowed_data.windows,
                     metrics=metrics_to_use,
                     kernel_type=self.config.ndg_kernel_type,
                     sigma_method=self.config.ndg_sigma_method,
