@@ -15,6 +15,9 @@ from thesis.fuzzy.operations import (
 )
 
 from thesis.fuzzy.similarity import (
+    # Main per-sensor similarity function (RECOMMENDED)
+    compute_per_sensor_similarity,
+    
     # Set-theoretic metrics
     similarity_jaccard,
     similarity_dice,
@@ -90,20 +93,20 @@ from thesis.fuzzy.distributions import (
 )
 
 __all__ = [
+    # MAIN INTERFACES (RECOMMENDED FOR NEW CODE)
+    "compute_per_sensor_similarity",  # Main similarity function
+    "compute_ndg",                    # Main membership function
+    "calculate_all_similarity_metrics", # Main metrics calculator
+    
     # Fuzzy operations
     "fuzzy_intersection", "fuzzy_union", "fuzzy_negation", 
     "fuzzy_cardinality", "fuzzy_symmetric_difference", "safe_divide",
     
-    # Similarity metrics - set-theoretic
-    "similarity_jaccard", "similarity_dice", "similarity_overlap_coefficient",
+    # Core similarity metrics
+    "similarity_jaccard", "similarity_dice", "similarity_cosine", "similarity_pearson",
     
-    # Similarity metrics - distance-based
-    "similarity_hamming", "similarity_euclidean", "similarity_chebyshev",
-    
-    # Similarity metrics - correlation-based
-    "similarity_cosine", "similarity_pearson",
-    
-    # Additional metrics
+    # Additional similarity metrics  
+    "similarity_overlap_coefficient", "similarity_hamming", "similarity_euclidean", "similarity_chebyshev",
     "mean_min_over_max", "mean_dice_coefficient", "mean_one_minus_abs_diff",
     "intersection_over_max_cardinality", "negated_intersection_over_max_cardinality",
     "negated_overlap_coefficient", "negated_symdiff_over_min_negated_component",
@@ -113,23 +116,14 @@ __all__ = [
     # Distance calculations
     "distance_hamming", "distance_euclidean", "distance_chebyshev",
     
-    # Membership function generation (unified interfaces - recommended)
-    "compute_ndg", "compute_membership_function_optimized",
-    
-    # Optimized NDG implementations
-    "compute_ndg_spatial_optimized", "compute_ndg_epanechnikov_optimized",
-    
-    # Reference/comparison implementations
-    "compute_ndg_streaming", "compute_membership_function",
-    "compute_membership_function_kde", "compute_membership_functions",
-    
-    # Master function for similarity
-    "calculate_all_similarity_metrics",
+    # Membership function generation
+    "compute_membership_function_optimized", "compute_ndg_spatial_optimized", "compute_ndg_epanechnikov_optimized",
+    "compute_ndg_streaming", "compute_membership_function", "compute_membership_function_kde", 
+    "compute_membership_functions", "compute_ndg_window", "compute_ndg_window_per_sensor",
     
     # Distribution analysis and fitness evaluation
     "compute_empirical_distribution_kde", "compute_empirical_distribution_counts",
     "compute_error_metrics", "compute_kl_divergence", "compute_chi_squared_test",
     "compute_information_criteria", "time_series_cross_validation",
     "normalize_data", "standardize_data", "compute_fitness_metrics",
-    "compute_ndg_window", "compute_ndg_window_per_sensor",
 ] 
