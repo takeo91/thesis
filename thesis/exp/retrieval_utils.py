@@ -38,8 +38,16 @@ def _first_match_rank(sorted_indices: Sequence[int], query_label, library_labels
 
     Returns ``None`` if no match is found.
     """
+    # Convert query_label to scalar if needed
+    if hasattr(query_label, 'item'):
+        query_label = query_label.item()
+    
     for rank, lib_idx in enumerate(sorted_indices, 1):
-        if library_labels[lib_idx] == query_label:
+        lib_label = library_labels[lib_idx]
+        # Convert to scalar if needed for proper comparison
+        if hasattr(lib_label, 'item'):
+            lib_label = lib_label.item()
+        if lib_label == query_label:
             return rank
     return None
 
@@ -62,7 +70,21 @@ def compute_hit_at_k(
     hits = 0
     for q_idx, row in enumerate(topk_idx):
         q_label = query_labels[q_idx]
-        if any(library_labels[j] == q_label for j in row):
+        # Convert to scalar if needed for proper comparison
+        if hasattr(q_label, 'item'):
+            q_label = q_label.item()
+        
+        hit_found = False
+        for j in row:
+            lib_label = library_labels[j]
+            # Convert to scalar if needed for proper comparison
+            if hasattr(lib_label, 'item'):
+                lib_label = lib_label.item()
+            if lib_label == q_label:
+                hit_found = True
+                break
+        
+        if hit_found:
             hits += 1
     return hits / len(query_labels)
 

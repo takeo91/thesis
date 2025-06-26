@@ -4,6 +4,7 @@ Data processing and loading package for thesis research.
 This package provides functionality for:
 - Dataset loading and preprocessing (Opportunity, PAMAP2, etc.)
 - Time series windowing for activity classification
+- Caching utilities for optimization
 - Data management and utilities
 """
 
@@ -30,6 +31,11 @@ from .windowing import (
     train_test_split_windows,
 )
 
+# Import caching functionality
+from .cache import (
+    WindowMembershipCache,
+)
+
 __all__ = [
     # Dataset classes and functions
     "SensorDataset",
@@ -48,4 +54,6 @@ __all__ = [
     "demo_windowing",
     "balance_windows_by_class",
     "train_test_split_windows",
+    # Caching classes and functions
+    "WindowMembershipCache",
 ]

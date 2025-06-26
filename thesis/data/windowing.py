@@ -497,18 +497,18 @@ def train_test_split_windows(
             n_lib = int(round(len(class_idx) * (1 - test_fraction)))
             n_lib = max(1, n_lib)
         selected = rng.choice(class_idx, size=n_lib, replace=False)
-        lib_indices.extend(selected)
+        lib_indices.extend([int(x) for x in selected])
         if stratified:
-            qry_indices.extend([i for i in class_idx if i not in selected])
+            qry_indices.extend([int(i) for i in class_idx if i not in selected])
 
     if not stratified:
         # Non-stratified simple split after gathering all indices
         all_indices = np.arange(len(labels))
         remaining = np.setdiff1d(all_indices, lib_indices, assume_unique=True)
-        qry_indices.extend(remaining)
+        qry_indices.extend([int(x) for x in remaining])
 
-    lib_indices = np.array(sorted(lib_indices))
-    qry_indices = np.array(sorted(qry_indices))
+    lib_indices = np.array(sorted(lib_indices), dtype=int)
+    qry_indices = np.array(sorted(qry_indices), dtype=int)
 
     def _subset(idx: np.ndarray) -> WindowedData:
         return WindowedData(
